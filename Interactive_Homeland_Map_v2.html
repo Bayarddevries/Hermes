@@ -1,0 +1,3523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red River Metis Homeland - Interactive Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:#1a1714;color:#f0e6d8}
+:root{
+  --bg:#1a1714;--bg2:#232019;--bg3:#2e2a22;
+  --bgov:rgba(26,23,20,0.92);
+  --accent:#c8956c;--accent2:#e6a97c;--accent3:#d4865a;
+  --glow:rgba(200,149,108,0.15);
+  --t1:#f0e6d8;--t2:#a89b8c;--t3:#7a6f63;
+  --brd:rgba(200,149,108,0.12);--brd2:rgba(200,149,108,0.25);
+  --r1:6px;--r2:10px;--r3:14px;
+  --xs:4px;--sm:8px;--md:16px;--lg:24px;
+}
+#map{width:100%;height:100vh}
+
+/* Header */
+.header{position:fixed;top:0;left:0;right:0;z-index:1000;background:var(--bgov);backdrop-filter:blur(12px);padding:var(--sm) var(--lg);display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--brd);height:56px}
+.h-brand{display:flex;flex-direction:column;gap:1px}
+.h-title{font-size:1rem;font-weight:600;color:var(--t1);letter-spacing:.01em}
+.h-sub{font-size:.72rem;color:var(--t3)}
+.h-actions{display:flex;align-items:center;gap:var(--sm)}
+.h-search{padding:var(--xs) var(--sm);border:1px solid var(--brd2);border-radius:var(--r2);background:var(--bg3);color:var(--t1);font-size:.8rem;width:200px;outline:none;font-family:inherit;transition:border-color .2s,box-shadow .2s}
+.h-search::placeholder{color:var(--t3)}
+.h-search:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--glow)}
+.h-stat{display:flex;align-items:center;gap:var(--xs);padding:var(--xs) var(--sm);background:var(--bg3);border:1px solid var(--brd);border-radius:var(--r2);font-size:.72rem;color:var(--t2)}
+.h-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+/* Sidebar */
+.sidebar{position:fixed;top:68px;left:var(--md);z-index:1000;width:260px;max-height:calc(100vh - 84px);background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r3);box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column}
+.sb-head{padding:var(--md);background:var(--bg3);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);border-bottom:1px solid var(--brd)}
+.sb-body{overflow-y:auto;padding:var(--xs) 0}
+.sb-body::-webkit-scrollbar{width:4px}
+.sb-body::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:var(--r1)}
+
+/* Layer buttons */
+.lbtn{display:flex;align-items:center;gap:var(--sm);padding:var(--sm) var(--md);cursor:pointer;font-size:.8rem;color:var(--t1);transition:background .15s;user-select:none;border-bottom:1px solid var(--brd)}
+.lbtn:last-child{border-bottom:none}
+.lbtn:hover{background:var(--glow)}
+.lbtn.on{background:var(--glow)}
+.ldot{width:10px;height:10px;border-radius:50%;border:2px solid var(--brd2);flex-shrink:0}
+.ldot.on{border-color:transparent}
+.lcnt{margin-left:auto;background:var(--bg3);padding:1px 8px;border-radius:10px;font-size:.68rem;color:var(--t3);font-variant-numeric:tabular-nums}
+.ldiv{height:2px;background:var(--brd2);margin:var(--xs) var(--md)}
+
+/* Legend */
+.legend{position:fixed;bottom:var(--lg);right:var(--lg);z-index:1000;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);padding:var(--md);box-shadow:0 4px 16px rgba(0,0,0,.4);font-size:.75rem}
+.leg-title{font-weight:600;color:var(--t1);margin-bottom:var(--sm);font-size:.78rem}
+.leg-row{display:flex;align-items:center;gap:var(--sm);margin-bottom:var(--xs);color:var(--t2)}
+.leg-line{width:28px;height:4px;border-radius:2px}
+
+/* Leaflet overrides */
+.leaflet-control-zoom{border:1px solid var(--brd2)!important;border-radius:var(--r2)!important;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.leaflet-control-zoom a{background:var(--bg2)!important;color:var(--t2)!important;border-color:var(--brd)!important;width:32px!important;height:32px!important;line-height:32px!important;font-size:18px!important}
+.leaflet-control-zoom a:hover{background:var(--accent3)!important;color:var(--t1)!important}
+.leaflet-control-attribution{background:var(--bgov)!important;color:var(--t3)!important;font-size:.65rem!important}
+.leaflet-control-attribution a{color:var(--accent)!important}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="h-brand">
+    <span class="h-title">Red River Metis Homeland</span>
+    <span class="h-sub" id="sub">Loading...</span>
+  </div>
+  <div class="h-actions">
+    <input class="h-search" id="search" placeholder="Search locations..." />
+    <div class="h-stat"><div class="h-dot"></div><span id="vc">0</span> visible</div>
+  </div>
+</header>
+
+<aside class="sidebar">
+  <div class="sb-head">Map Layers</div>
+  <div class="sb-body" id="layers"></div>
+</aside>
+
+<div class="legend">
+  <div class="leg-title">Transport Routes</div>
+  <div class="leg-row"><div class="leg-line" style="background:var(--accent)"></div>Red River Cart Trails</div>
+  <div class="leg-row"><div class="leg-line" style="background:#4da8da"></div>York Boat Routes</div>
+</div>
+
+<div id="map"></div>
+
+<script>
+const locations = [
+  {
+    "name": "Ash House (Fort de la Fr\u00e8niere)",
+    "lat": 49.4589,
+    "lng": -100.4167,
+    "type": "Fort / Trading Post",
+    "founded": "1795",
+    "desc": "This North West Company \"canoe fort\" was established on the north shore of the Souris River, which was originally called Rivi\u00e8re St. Pierre by La V\u00e9rendrye. Located near present-day Hartney, the fort was strategically surrounded on three sides by the river for natural defense. It was built to challenge the growing competition of the Hudson\u2019s Bay Company in the Assiniboine region. Astronomer David Thompson recorded its precise latitude, noting it was roughly 13.5 miles from where Plum Creek entered the Souris.",
+    "region": "Southern Red River Valley",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Bacon Ridge",
+    "lat": 51.1542,
+    "lng": -99.3039,
+    "type": "Road Allowance Community",
+    "founded": "1950s (Documented)",
+    "desc": "Located south of Lake Ebb and Flow and its associated reserve, this settlement recorded a population of ninety M\u00e9tis in 1959. It was categorized as a community where the M\u00e9tis lived on the \"fringe\" of an Indian Reserve. The area is historically significant as a site for traditional maple sugaring.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Baie de Canard",
+    "lat": 52.1764,
+    "lng": -100.1492,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "A centuries-old gathering place on Lake Winnipegosis known for salt springs and fisheries. Many members took scrip in 1885 but unsuccessfully petitioned to return to Treaty status in 1893.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "Baie St. Paul",
+    "lat": 49.9822,
+    "lng": -97.9011,
+    "type": "Parish / Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "A French-M\u00e9tis parish on the Assiniboine River between St. Fran\u00e7ois Xavier and Poplar Point. Father Belcourt founded the mission to transition the M\u00e9tis and Saulteaux to a sedentary lifestyle by providing plows and oxen to plant potatoes, corn, and oats. The settlement included a school led by the Nolin sisters, who were fluent in French, English, Ojibwa, and Cree.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Baie St. Paul (Saulteaux Village)",
+    "lat": 49.9822,
+    "lng": -97.9011,
+    "type": "Parish / Settlement",
+    "founded": "1832",
+    "desc": "A French-M\u00e9tis parish on the Assiniboine River between St. Fran\u00e7ois Xavier and Poplar Point. Father Belcourt founded the mission to transition the M\u00e9tis and Saulteaux to a sedentary lifestyle by providing plows and oxen to plant potatoes, corn, and oats. The settlement included a school led by the Nolin sisters, who were fluent in French, English, Ojibwa, and Cree.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Balsam Bay",
+    "lat": 50.4189,
+    "lng": -96.6514,
+    "type": "Settlement",
+    "founded": "1884",
+    "desc": "A M\u00e9tis community located south of Grand Beach with a recorded history dating to 1884. It was named by Matilda Aerson (n\u00e9e Thomas). The community was known for its local cemetery, which provided free burial grounds for several surrounding settlements including Beaconia, Stony Point, and Belair.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Barrows (Baden, Powell, National Mills and Red Deer Lake)",
+    "lat": 52.8317,
+    "lng": -101.4428,
+    "type": "Settlement (Lumber Towns)",
+    "founded": "Late 1700s",
+    "desc": "This area was settled by the Red River M\u00e9tis in the late 1700s. Barrows is the largest of a cluster of five associated M\u00e9tis communities situated on the northern edge of the Porcupine Forest. It served as a rapidly constructed lumber town for the Red Deer Lumber Company. By the mid-1920s, the mill operation ceased, leading to a decline in the town's prominence. The area is historically linked to the Fort Red Deer River (or Fort Rivi\u00e8re la Biche), a North West Company post founded by Hugh McGillis in 1794. In 1959, the census recorded 130 M\u00e9tis in Baden, 40 in Barrows, 20 in National Mills, and 59 in Red Deer Lake.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Bas de la Rivi\u00e8re (Fort Alexander)",
+    "lat": 50.6053,
+    "lng": -96.2917,
+    "type": "Fort / Trading Post",
+    "founded": "1732",
+    "desc": "Originally established as a wintering post and depot for the North West Company in 1732, this location was vital because the soil was suitable for agriculture when other areas failed. In 1792, Simon Fraser and Lesieur Toussaint established a larger post here, also known as Sieurs Fort. It served as a strategic provisioning hub where bags of pemmican from the upper Assiniboine were stored for canoe brigades traveling to the far northwest. It was the unofficial capital of the NW Company's Lake Winnipeg district. By 1817, the M\u00e9tis staff were farming wheat, barley, and potatoes, effectively supplying the Red River Settlement with seed grain during years of crop failure.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Bas de la Rivi\u00e8re (Pine Falls, Fort Alexander)",
+    "lat": 50.6053,
+    "lng": -96.2917,
+    "type": "Fort / Settlement",
+    "founded": "1732",
+    "desc": "This community spanned both shores of the Winnipeg River, from Pointe au Foutre (the portage at Pine Falls) down to Traverse Bay on Lake Winnipeg. It was ideally positioned for the October whitefish fishery, where fish spawn on the gravel bottoms of the bay. By the early 1800s, it featured extensive gardens that sold vegetables to incoming settlers. After the amalgamation of the fur companies in 1821, the site lost its status as a major transshipment hub but remained a thriving M\u00e9tis agricultural and fishing community. In 1958, the road allowance community at Pine Falls alone recorded a population of 300 M\u00e9tis.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Batoche",
+    "lat": 52.7533,
+    "lng": -106.1158,
+    "type": "Settlement (Wintering site)",
+    "founded": "Historic wintering site",
+    "desc": "A destination for French-speaking M\u00e9tis who moved permanently to their traditional wintering quarters after the 1869-70 Resistance. It is recognized as a significant community in the M\u00e9tis Homeland.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Battle River Valley",
+    "lat": 52.8833,
+    "lng": -108.2833,
+    "type": "Settlement / Wintering site",
+    "founded": "Historic",
+    "desc": "A vital wintering hunting grounds in the Saskatchewan River parkland where the north buffalo hunt brigades of the Metis wintered each season near the river valley. This area served as a crucial gathering point for Metis families in the 1850s-1880s, providing abundant buffalo, pemmican production, and fur trading. The community maintained strong kinship links to Batoche, St. Laurent, and St. Albert, serving as the northern anchor of the plains Metis homeland.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "Medium"
+  },
+  {
+    "name": "Berens River",
+    "lat": 52.3578,
+    "lng": -97.0253,
+    "type": "Settlement / Trading Post",
+    "founded": "1814 (First post)",
+    "desc": "Located on the east shore of Lake Winnipeg, this site was a stopping point for M\u00e9tis boatmen since 1765. It was a thriving community until 1970, when a ban on fishing due to mercury contamination devastated the local economy. Most fishermen were forced to relocate, leaving the remainder dependent on government compensation.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Big Eddy (Settlement)",
+    "lat": 53.8419,
+    "lng": -101.3144,
+    "type": "Road Allowance Community",
+    "founded": "1912 (Incorporation exclusion)",
+    "desc": "A road allowance community located seven kilometers northwest of The Pas. When The Pas was incorporated in 1912, Big Eddy was intentionally excluded from the town boundaries. This exclusion allowed the municipality to deny M\u00e9tis residents access to basic services like water and sewer.",
+    "region": "Northern NWT Homeland",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Birds Hill",
+    "lat": 50.0069,
+    "lng": -96.9203,
+    "type": "Historic Sanctuary",
+    "founded": "1824 (Grant)",
+    "desc": "Named after James Curtis Bird, an HBC Chief Factor who received a 3,000-acre land grant here in 1824. Known as \"the Pines,\" its high ground served as a vital sanctuary for Red River settlers and their livestock during the great floods of 1826 and 1852.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "High"
+  },
+  {
+    "name": "Birsay Village",
+    "lat": 51.0959,
+    "lng": -106.9812,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "Built west of Fort Douglas by Orkney-Cree Michif freemen seeking a sedentary life. Named for the home parish of leader Magnus Spence. The village was hit by outbreaks of whooping cough and measles, followed by a plague of grasshoppers that destroyed their crops.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Birsay Village or Orkney Town",
+    "lat": 51.0959,
+    "lng": -106.9812,
+    "type": "Settlement",
+    "founded": "1817",
+    "desc": "Built west of Fort Douglas by Orkney-Cree Michif freemen seeking a sedentary life. Named for the home parish of leader Magnus Spence. The village was hit by outbreaks of whooping cough and measles, followed by a plague of grasshoppers that destroyed their crops.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Black Butte (Butte Noir)",
+    "lat": 48.9833,
+    "lng": -102.6667,
+    "type": "Settlement / Landmark",
+    "founded": "Historic",
+    "desc": "Known as 'Butte Noir' to the French-speaking Metis, this prominent landmark near the North Dakota-Manitoba border served as a critical navigation point for the great annual buffalo hunts between the Red River and the Missouri. Standing distinct against the horizon, it was used as a meeting place where hunting parties would confirm directions, scout for herds, and gather for council meetings. The site holds significance in oral histories as both a spiritual lookout and a practical waymark for the Metis caravans.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Blood River Post (Bloodvein River)",
+    "lat": 51.785,
+    "lng": -96.7117,
+    "type": "Trading Post",
+    "founded": "1794",
+    "desc": "An HBC post located at the mouth of the Bloodvein River on Lake Winnipeg. It was part of the extensive northern trade network utilized by M\u00e9tis boatmen.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Blueberry Patch",
+    "lat": 49.8553,
+    "lng": -97.2344,
+    "type": "Traditional Harvesting Site",
+    "founded": "Ancient / Traditional",
+    "desc": "Traditional harvesting grounds within the Swan Pelican Provincial Forest used by the M\u00e9tis and First Nations people of Pine Creek, Camperville, and Duck Bay. Located on unoccupied Crown lands, these grounds were essential for food and medicinal gathering.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Boggy Creek and San Clara",
+    "lat": 51.5714,
+    "lng": -101.3931,
+    "type": "Settlement",
+    "founded": "Early 1880s",
+    "desc": "Settled by fur trade families in the 1880s, these hubs near Roblin were thriving communities for trapping and trade. In the late 1930s, many founding families (Jeromes, Langans) were forcibly displaced under the Prairie Farm Rehabilitation Act to create community pastures.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Brandon House and Fort Assiniboine",
+    "lat": 49.6978,
+    "lng": -99.6386,
+    "type": "Forts / Trading Posts",
+    "founded": "Oct 16, 1793",
+    "desc": "Brandon House was founded by the HBC on the northeast bank of the Assiniboine River. It was a central trade hub but underwent several moves due to competition. In 1816, it was famously captured and plundered by Cuthbert Grant and a party of M\u00e9tis as a prelude to the Battle of Seven Oaks.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Buffalo Lake",
+    "lat": 52.4833,
+    "lng": -112.85,
+    "type": "Settlement (Wintering site)",
+    "founded": "Historic",
+    "desc": "A historic wintering site for Metis hivernants (winterers) in central Saskatchewan, situated in the Aspen Parkland region. This lake was part of the broader network of communities centered around the North Saskatchewan River system. The settlement was known for its deep involvement in the buffalo hunt and served as a strategic gathering point where families pooled resources during the harsh winter months, maintaining their Michif culture and independence.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "Medium"
+  },
+  {
+    "name": "Butte St. Paul (\"Ot Accowabiwinins\")",
+    "lat": 48.8167,
+    "lng": -99.55,
+    "type": "Landmark",
+    "founded": "Ancient",
+    "desc": "A prominent geographic landmark and community gathering place mentioned in the Virtual Museum with the traditional Michif name 'Ot Accowabiwinins.' The name reflects the Indigenous roots of the Metis people who used this site as a meeting place, spiritual location, and navigation marker on the plains. Such landmarks were critical for buffalo hunting brigades traveling hundreds of miles across open country.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Calf Mountain (Tete de Boeuf), Little Dance Hill",
+    "lat": 49.1809,
+    "lng": -98.3861,
+    "type": "Historic / Ceremonial Site",
+    "founded": "Ancient / Historic",
+    "desc": "Located south of Darlingford with an elevation of 1,550 feet, this was a sacred ceremonial site for Plains Indians who called it Mepawaquomoshin (Little Dance Hill). It was a strategic landmark for Red River buffalo hunters. In the mid-1850s, a legendary battle occurred here where 1,500 buffalo hunters defeated a Sioux war party; roughly 597 warriors were reportedly buried on the western slope. In 1909, an anthropologist from the University of Toronto dug into the mound, removing many artifacts to the dismay of local Aboriginal people.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "Medium"
+  },
+  {
+    "name": "Camperville",
+    "lat": 51.9161,
+    "lng": -100.0169,
+    "type": "Settlement",
+    "founded": "1860s (Salt); 1914 (Renamed)",
+    "desc": "History is rooted in the 1860s salt trade where M\u00e9tis prepared salt for the HBC. Renamed for Father Camper, who encouraged M\u00e9tis from St. Laurent to settle there. A residential school was established in 1894 to educate Indian and M\u00e9tis children.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Carlton Trail (M\u00e9tis Stopping Points)",
+    "lat": 52.7533,
+    "lng": -106.1158,
+    "type": "Transportation Route",
+    "founded": "Early 1800s",
+    "desc": "A network of stopping houses established as M\u00e9tis freighted goods west to Edmonton. These houses, such as High Bluff and Tanner\u2019s Crossing, evolved into small M\u00e9tis settlements.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Carrot River Valley (Pasquia Settlement)",
+    "lat": 53.5167,
+    "lng": -103.2667,
+    "type": "Settlement Hub",
+    "founded": "Ancient Rendezvous; 1741 (Fort)",
+    "desc": "A strategic region south of The Pas used for farming and gathering. It includes settlements like Young's Point and was historically a rendezvous for hunters awaiting spring fish runs.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Catfish Creek",
+    "lat": 50.4022,
+    "lng": -96.3478,
+    "type": "Geographic Landmark",
+    "founded": "Oral tradition / approximate",
+    "desc": "Flows into the Assiniboine River near present-day Polo Park in Winnipeg. Historically significant as a junction point where Metis boatmen from western parishes would leave the river channel before continuing overland.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Cayer",
+    "lat": 51.3533,
+    "lng": -99.0308,
+    "type": "Settlement",
+    "founded": "1950s (Documented)",
+    "desc": "A M\u00e9tis community located northeast of McCreary and east of Dauphin. Named for Narcisse K. Cayer, it had a population of 150 M\u00e9tis residents in 1959.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cedar Lake (Chemanwawin) M\u00e9tis Settlement",
+    "lat": 53.1833,
+    "lng": -99.2833,
+    "type": "Settlement (Flooded)",
+    "founded": "Ancient; Relocated 1960s",
+    "desc": "A self-sufficient community on the west shore of Cedar Lake, its name derived from the Cree word for \"a place for fishing with nets\". In the early 1960s, the entire settlement\u2014composed of 43 First Nations and 12 M\u00e9tis families\u2014was flooded out by the Grand Rapids Hydro Project. They were relocated to Easterville on a townsite that was deemed unsuitable for their traditional subsistence lifestyle. The community received only $20,000 in compensation and vague, unfulfilled promises of economic aid from the provincial government.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Charleswood (St. Charles Parish)",
+    "lat": 49.8517,
+    "lng": -97.2831,
+    "type": "Parish / Settlement",
+    "founded": "Early 1800s",
+    "desc": "The location of \"The Passage,\" a natural ford for Red River carts. Among the earliest settlers on the river lot farms were the Beauchemin, Hogue, and Morrissette families.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Choteau",
+    "lat": 47.8122,
+    "lng": -112.1831,
+    "type": "Settlement",
+    "founded": "Late 1800s",
+    "desc": "A significant M\u00e9tis community in north-central Montana along the Rocky Mountain Front. Established by families who migrated south from the Red River Settlement in the late 1800s, following the buffalo herds and seeking new opportunities. Named for Pierre Chouteau of the American Fur Company. The community retained its Michif language and Catholic traditions well into the twentieth century, maintaining strong kinship ties to Canadian Red River M\u00e9tis families. Choteau remains a gathering place for M\u00e9tis descendants who trace their roots across the international border.",
+    "region": "Montana Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cold Lake",
+    "lat": 54.4642,
+    "lng": -110.1825,
+    "type": "Road Allowance Community",
+    "founded": "Oral tradition / approximate",
+    "desc": "A road allowance community south of Sherridon known as \"Moccasin Flats\". Residents worked in mining and guiding but were denied land titles. Senator Ed Head recalled rebuilding log homes further down the road whenever they were forced to move.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Cold Lake (Kississing)",
+    "lat": 55.1311,
+    "lng": -100.8683,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "A road allowance community south of Sherridon known as \"Moccasin Flats\". Residents worked in mining and guiding but were denied land titles. Senator Ed Head recalled rebuilding log homes further down the road whenever they were forced to move.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Cooks Creek",
+    "lat": 50.0089,
+    "lng": -96.7561,
+    "type": "Mission / Settlement",
+    "founded": "1833",
+    "desc": "Site of St. Peter\u2019s Anglican Mission established on land donated by Chief Peguis. By 1850, it was a productive community with 500 residents living on narrow river lots practicing agriculture.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cormorant",
+    "lat": 54.2181,
+    "lng": -100.6033,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Located north of The Pas on Cormorant Lake, this is a historic Indigenous campsite and fishing area. In 1959, it had 169 M\u00e9tis residents and was key to managing the Summerberry Marsh trapping.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cranberry Portage",
+    "lat": 54.5889,
+    "lng": -101.3789,
+    "type": "Settlement / Trading Post",
+    "founded": "Ancient; 1804 (Post)",
+    "desc": "A 2,000-year-old portage between the Grassy River and Lake Athapapuskow. M\u00e9tis trapper David Collins is credited with showing prospectors the claim that became the Flin Flon mines.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Crane River (O-Chi-Chak-Ko-Sipi)",
+    "lat": 51.5286,
+    "lng": -99.2789,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Located on the northwest shore of Lake Manitoba. Historically, M\u00e9tis and First Nations gathered here to collect salt. It borders the Crane River First Nation.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "Medium"
+  },
+  {
+    "name": "Crescentwood",
+    "lat": 49.8697,
+    "lng": -97.1681,
+    "type": "Settlement (Displaced)",
+    "founded": "Pre-1870 (Lots); 1902 (Suburb)",
+    "desc": "Originally composed of long M\u00e9tis river lots south of the Assiniboine River in Winnipeg. Wealthy development starting in 1902 displaced original residents, pushing them toward Rooster Town.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cumberland House",
+    "lat": 53.9583,
+    "lng": -102.2667,
+    "type": "Fort / Trading Post",
+    "founded": "1774",
+    "desc": "A major fur trade juncture established in 1774. It was the main route into the North in the late 1800s.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Curling River Post",
+    "lat": 50.5983,
+    "lng": -96.3117,
+    "type": "Trading Post",
+    "founded": "1817",
+    "desc": "Established by Peter Fidler's son Charles to compete with NWC posts near Minnedosa. It was located on the Curling (now Rolling) River.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Cypress Hills",
+    "lat": 49.6333,
+    "lng": -109.5,
+    "type": "Settlement (Wintering site)",
+    "founded": "Historic",
+    "desc": "A vital seasonal hunting ground and settlement area for the plains M\u00e9tis. Hivernant families and brigades utilized the area extensively.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Deer Rapids",
+    "lat": 50.1833,
+    "lng": -96.8833,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "The location of early Indian and M\u00e9tis settlements on the Red River, later known as St. Andrews.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Dog Head Settlement",
+    "lat": 51.7456,
+    "lng": -96.9083,
+    "type": "Settlement / Trading Post",
+    "founded": "1901 (Documented)",
+    "desc": "Located on the east shore of Lake Winnipeg; home to itinerant M\u00e9tis such as prospector Louis Simard Sr.. Simard held claims in several mining shafts like the San Antonio.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Dog Patch",
+    "lat": 49.9,
+    "lng": -97.15,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "A road allowance community in Winnipeg near the CPR Weston shops. Created as M\u00e9tis were displaced by industrial expansion and urban development.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Duck Bay (Zhiishiibi-Ziibiing)",
+    "lat": 52.0161,
+    "lng": -100.0097,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "A centuries-old gathering place on Lake Winnipegosis known for salt springs and fisheries. Many members took scrip in 1885 but unsuccessfully petitioned to return to Treaty status in 1893.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "Duck Mountain",
+    "lat": 51.6667,
+    "lng": -100.8333,
+    "type": "Geographic Landmark",
+    "founded": "Historic",
+    "desc": "A significant geographic area for fur trade and M\u00e9tis settlement, notably around San Clara and Boggy Creek.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Easterville",
+    "lat": 53.23,
+    "lng": -99.2447,
+    "type": "Settlement (Relocated)",
+    "founded": "Early 1960s",
+    "desc": "The relocation site for families from the flooded Cedar Lake community. The townsite was deemed unsuitable for their traditional way of life, leading to government dependency.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Eddystone",
+    "lat": 51.1717,
+    "lng": -99.0439,
+    "type": "Settlement",
+    "founded": "1938 (Church)",
+    "desc": "Originally called Lonely Lake; in 1938, residents collaborated to build the St. Thomas Aquinas Catholic Church. Land was donated by Jim Spence.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Edmonton House (Fort Augustus)",
+    "lat": 53.5444,
+    "lng": -113.4909,
+    "type": "Fort / Trading Post",
+    "founded": "1795",
+    "desc": "A major northwestern trade hub and destination for Red River families moving west.",
+    "region": "Alberta Homeland",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fairford Settlement (formerly Pinaymootang)",
+    "lat": 51.6033,
+    "lng": -98.4839,
+    "type": "Mission / Trading Post",
+    "founded": "1795 (Post); 1842 (Mission)",
+    "desc": "A mission and trading post where trade relations were notoriously tense in the late 1700s. Duncan Cameron wintered there in 1795-96.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fish Creek",
+    "lat": 52.5486,
+    "lng": -106.1367,
+    "type": "Historic Site",
+    "founded": "Historic",
+    "desc": "Flows into the South Saskatchewan River near Batoche Saskatchewan. Site of the Battle of Fish Creek (Tourond's Coulee) on April 24 1885 where Gabriel Dumont's approximately 60 Metis warriors ambushed General Frederick Middleton's 900 government troops. The Metis held their defensive positions in the coulee for approximately 6 hours before strategically withdrawing.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Flee Island Entrenchments",
+    "lat": 50.1,
+    "lng": -98.0833,
+    "type": "Historic Site (Defensive)",
+    "founded": "1864",
+    "desc": "Fortified camps built by Dakota refugees in 1864. They featured circular trenches and pits where women and children took refuge during attacks by bounty hunters.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fond du Lac (now St. Laurent)",
+    "lat": 50.4194,
+    "lng": -98.005,
+    "type": "Settlement",
+    "founded": "1824",
+    "desc": "Established by M\u00e9tis forced to leave Pembina when it became American territory. Residents maintained a strong Michif identity despite church and school pressure to adopt standard French.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Alexander (Sagkeeng)",
+    "lat": 50.6053,
+    "lng": -96.2917,
+    "type": "Fort / Trading Post",
+    "founded": "1793",
+    "desc": "Originally an HBC post built to counter the NWC's Bas-de-la-Rivi\u00e8re. It was a key provisioning post where pemmican from the upper Assiniboine was stored for northwestern brigades.",
+    "region": "Northern NWT Homeland",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Dauphin",
+    "lat": 51.1486,
+    "lng": -100.0531,
+    "type": "Fort / Trading Post",
+    "founded": "1741",
+    "desc": "Established in present-day Winnipegosis by Chevalier de la V\u00e9rendrye. Explorer Peter Fidler died here in 1822. Later known as \"Dogtown\".",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort de la Rivi\u00e8re Tremblante",
+    "lat": 51.4833,
+    "lng": -101.6333,
+    "type": "Fort / Trading Post",
+    "founded": "1791",
+    "desc": "Built by Robert Grant, it was Cuthbert Grant Sr.'s favorite residence and a key provisioning post for brigades. Departed in 1798 due to intense competition.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Fort de la Rivi\u00e8re Tremblante (Grant\u2019s House, Aspin House)",
+    "lat": 51.4833,
+    "lng": -101.6333,
+    "type": "Fort / Trading Post",
+    "founded": "1791",
+    "desc": "Built by Robert Grant of the North West Company in 1791, this post was situated on the Upper Assiniboine River near the mouth of the Rivi\u00e8re Tremblante. It became the favorite residence of Cuthbert Grant Sr. when he took charge of the district in 1793. The fort functioned as both a source of high-quality furs and a provisioning depot for brigades heading to Athabasca country. Grant abandoned the post in 1798 due to extreme competition from 14 other rival posts in the immediate region.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Fort des \u00c9pinettes",
+    "lat": 49.6167,
+    "lng": -99.2333,
+    "type": "Fort / Trading Post",
+    "founded": "1768",
+    "desc": "A major depot on the Assiniboine used for Mandan trade. Abandoned in 1781 after a smallpox epidemic.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Desjarlais",
+    "lat": 49.1233,
+    "lng": -100.4167,
+    "type": "Fort / Trading Post",
+    "founded": "1836",
+    "desc": "Built by Joseph Desjarlais and protected by an oak palisade. It was a major supplier of pemmican and whiskey.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Fort Ellice",
+    "lat": 50.4786,
+    "lng": -101.2722,
+    "type": "Fort / Trading Post",
+    "founded": "1794",
+    "desc": "Established on the Qu\u2019Appelle River; it served as the headquarters for the Swan River District. Managed by famous M\u00e9tis traders like the McKays.",
+    "region": "Brandon & Souris River Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Gibralter",
+    "lat": 49.8903,
+    "lng": -97.1303,
+    "type": "Fort / Trading Post",
+    "founded": "1810",
+    "desc": "Built at the Forks by the NWC; seized by Louis Riel in 1869. Site for meetings of the Legislative Assembly of Assiniboia.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Fort la Reine",
+    "lat": 49.9625,
+    "lng": -98.3106,
+    "type": "Fort / Trading Post",
+    "founded": "Oral tradition / approximate",
+    "desc": "Established near a buffalo crossing and sturgeon fishery. Home of Chief Peichito Tanner, who operated 250 Red River carts.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort la Reine (Portage la Prairie)",
+    "lat": 49.9625,
+    "lng": -98.3106,
+    "type": "Fort / Trading Post",
+    "founded": "1738",
+    "desc": "Established near a buffalo crossing and sturgeon fishery. Home of Chief Peichito Tanner, who operated 250 Red River carts.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Langley",
+    "lat": 49.1678,
+    "lng": -122.5808,
+    "type": "Fort / Trading Post",
+    "founded": "Historic",
+    "desc": "Major Hudson's Bay Company post established in 1827 on the Fraser River in what is now British Columbia. A critical supply and trade hub for the Pacific Northwest fur trade. Many M\u00e9tis employees from the Red River Settlement were stationed here, forming families with local Indigenous peoples and creating one of the first established M\u00e9tis communities on the Pacific coast. The post served as a gathering point for M\u00e9tis voyageurs, traders, and their families who brought M\u00e9tis culture westward.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Montagne \u00e0 la Bosse",
+    "lat": 49.8167,
+    "lng": -100.8667,
+    "type": "Fort / Trading Post",
+    "founded": "1790",
+    "desc": "Built on the Upper Assiniboine near buffalo wintering grounds. Buffalo could be seen grazing from the fort gate at almost any season.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Mr. Grant",
+    "lat": 49.3333,
+    "lng": -100.9833,
+    "type": "Fort / Trading Post",
+    "founded": "1824",
+    "desc": "Built by Cuthbert Grant after the HBC closed Brandon House. Used to trade with M\u00e9tis and Indians from Turtle Mountain to Qu\u2019Appelle.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Fort Pelly",
+    "lat": 51.7833,
+    "lng": -101.9833,
+    "type": "Fort / Trading Post",
+    "founded": "1824",
+    "desc": "Headquarters for the Swan River District before being replaced by Fort Ellice.",
+    "region": "Brandon & Souris River Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Pinancewaywining",
+    "lat": 49.2,
+    "lng": -98.0167,
+    "type": "Fort / Trading Post",
+    "founded": "1802",
+    "desc": "Located south-west of Morden; first post supplied by Red River Carts from Pembina. Built by Alexander Henry the Younger.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Rouge",
+    "lat": 49.8858,
+    "lng": -97.1325,
+    "type": "Fort / Trading Post",
+    "founded": "1738",
+    "desc": "Located at the south point of the Forks; originally river lots owned by M\u00e9tis families. Residents were displaced by suburban expansion.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort Souris",
+    "lat": 49.6667,
+    "lng": -99.5833,
+    "type": "Fort / Trading Post",
+    "founded": "1793",
+    "desc": "Built on the Souris River for Mandan trade. Abandoned when HBC built Brandon House but later re-established.",
+    "region": "Brandon & Souris River Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fort St. Charles",
+    "lat": 49.3608,
+    "lng": -95.0442,
+    "type": "Fort / Trading Post",
+    "founded": "Early 1730s",
+    "desc": "Built by La V\u00e9rendrye in the early 1730s; ruins discovered in 1902. Contained remains of La V\u00e9rendrye's son.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Fouillard Town (The Corner / Li Kwayn)",
+    "lat": 50.4689,
+    "lng": -101.2989,
+    "type": "Road Allowance Community",
+    "founded": "1939",
+    "desc": "A road allowance community near Binscarth established by refugees from Ste. Madeleine. After their homes in Ste. Madeleine were burned in 1939 to make way for a community pasture, residents resettled on a former gravel pit that had once been part of the Gambler Reserve. The community was sarcastically named Selby Town after a municipal official responsible for their displacement. In 1946, the Fouillard Special School was built to replace the mission school they lost.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Four Persons",
+    "lat": 49.9167,
+    "lng": -110.8333,
+    "type": "Settlement",
+    "founded": "Late 1800s",
+    "desc": "A M\u00e9tis community in northern Montana associated with the broader Choteau settlement area. Formed by families who migrated south from the Red River region in the late nineteenth century, following hunting grounds and seeking refuge from displacement. The community maintained strong kinship ties to Red River M\u00e9tis families and was part of the network of M\u00e9tis communities that stretched across Montana, North Dakota, and southern Manitoba.",
+    "region": "Montana Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Frog Plain (La Grenouill\u00e8re)",
+    "lat": 49.94,
+    "lng": -97.1,
+    "type": "Meeting Site / Rendezvous",
+    "founded": "Early 1800s",
+    "desc": "Traditional meeting place north of Seven Oaks. Site of annual rendezvous where partners met brigades bringing pemmican.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Gabriel's Crossing",
+    "lat": 52.6667,
+    "lng": -106.1,
+    "type": "Settlement / Transportation site",
+    "founded": "1870s",
+    "desc": "A historic ferry crossing on the South Saskatchewan River operated by Gabriel Dumont.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "High"
+  },
+  {
+    "name": "Grand Marais",
+    "lat": 50.485,
+    "lng": -96.6347,
+    "type": "Settlement",
+    "founded": "Early 1800s",
+    "desc": "Community on the east shore of Lake Winnipeg that maintained exclusive M\u00e9tis identity until the mid-1950s. Overwhelmed by the tourist industry.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Grand Rapids (Red River and Saskatchewan River)",
+    "lat": 53.1864,
+    "lng": -99.2667,
+    "type": "Settlement / Fort",
+    "founded": "1823 (Red River) / 1864 (HBC Sask River)",
+    "desc": "The Red River community was formed after 1823 north of Winnipeg on high ground. In 1840, it was 39% M\u00e9tis fathers and 97% Aboriginal mothers. The Saskatchewan River site was a fur trade gateway at the river's mouth at Lake Winnipeg. It was a base for \"free traders\" and a gathering place for seasonal sturgeon fishing. In the 1960s, the provincial government bulldozed M\u00e9tis homes to clear the area for a hydro project, forcing residents to accept minimal compensation.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Grande Pointe",
+    "lat": 49.7439,
+    "lng": -97.0272,
+    "type": "Settlement",
+    "founded": "1860s",
+    "desc": "M\u00e9tis settlement dating back to the 1860s along the Seine River. Residents found employment building the Pembina Branch Railway in the 1870s.",
+    "region": "Southern Red River Valley",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "High"
+  },
+  {
+    "name": "Grantown (St. Fran\u00e7ois Xavier)",
+    "lat": 49.9197,
+    "lng": -97.5511,
+    "type": "Parish / Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "Established by Cuthbert Grant in 1823 as a buffer for the Red River Settlement. First industrial site in Manitoba for cart construction.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "Grassy Narrows House",
+    "lat": 50.1667,
+    "lng": -94.6667,
+    "type": "Trading Post (Outpost)",
+    "founded": "Pre-1875",
+    "desc": "HBC outpost on Lake Winnipeg staffed by M\u00e9tis families like the Whiteways and Spences. Located on the west bank of the Hecla channel.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Green Lake (Lac Vert)",
+    "lat": 54.1167,
+    "lng": -107.6333,
+    "type": "Settlement / Trading Post",
+    "founded": "Historic",
+    "desc": "Listed as a significant M\u00e9tis community in Saskatchewan.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Hair Hills or Pembina Mountains",
+    "lat": 49.1167,
+    "lng": -98.3667,
+    "type": "Geographic Landmark",
+    "founded": "Historic",
+    "desc": "Named for buffalo wool rubbed off on trees. Strategic wintering spot for hunters and site of early trading outposts.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Havre",
+    "lat": 48.55,
+    "lng": -109.6841,
+    "type": "Settlement",
+    "founded": "Late 1800s",
+    "desc": "Northern Montana M\u00e9tis community along the Milk River, where families settled after being displaced from the Red River area. Members took scrip in the 1880s under the US government's assimilation policies, similar to the scrip process experienced by M\u00e9tis in Canada. The community was part of the Hi-Line M\u00e9tis corridor \u2014 a network of communities spanning the border region between Montana and Saskatchewan.",
+    "region": "Montana Homeland",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "Heart Butte",
+    "lat": 48.2911,
+    "lng": -112.8361,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis community in northwestern North Dakota with deep cultural and kinship connections to the Canadian Red River M\u00e9tis homeland. The community is located near the Rocky Boy area and served as a gathering point for M\u00e9tis families who had been displaced by border enforcement and land loss. Heart Butte represents the southern extension of the M\u00e9tis diaspora and the enduring family networks that connected communities across the Canada-US border.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "\u00celets de Bois",
+    "lat": 49.4994,
+    "lng": -98.0017,
+    "type": "Settlement / Sugar Bush Site",
+    "founded": "Oral tradition / approximate",
+    "desc": "Primary stopping point for buffalo hunters to repair carts. Famous for spring \"sugar lots\" where families tapped maple trees.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "High"
+  },
+  {
+    "name": "\u00celets de Bois (now Carman)",
+    "lat": 49.4994,
+    "lng": -98.0017,
+    "type": "Settlement",
+    "founded": "1825",
+    "desc": "Primary stopping point for buffalo hunters to repair carts. Famous for spring \"sugar lots\" where families tapped maple trees.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "High"
+  },
+  {
+    "name": "Island Cache",
+    "lat": 54.0,
+    "lng": -113.0,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis community in British Columbia associated with the western migration of fur trade families. Located along major trade routes, it served as a stopping point for M\u00e9tis voyageurs and traders moving between the plains and the Pacific coast. The community represents the westernmost extent of the M\u00e9tis homeland and the vast geographic reach of M\u00e9tis family networks.",
+    "region": "British Columbia Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Jack River Post",
+    "lat": 53.9833,
+    "lng": -97.8167,
+    "type": "Trading Post",
+    "founded": "1796",
+    "desc": "HBC post south of Norway House; relocation site for Selkirk Settlers in 1815. Replaced by modern Norway House site in 1827.",
+    "region": "East Side Lake Winnipeg",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Kansas Half Breed Tracts",
+    "lat": 39.2,
+    "lng": -95.2,
+    "type": "Reserved Lands / Settlement",
+    "founded": "1825",
+    "desc": "Lands set aside for M\u00e9tis people in the United States.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Kelly Lake",
+    "lat": 55.2333,
+    "lng": -120.0167,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis community in northeastern British Columbia, near the Alberta border. Established during the westward expansion of the fur trade and the movement of M\u00e9tis trapper families into the Peace River region. Many families were connected to the M\u00e9tis communities of northern Alberta and Saskatchewan through kinship and trade routes. The community maintained its M\u00e9tis identity despite isolation and the challenges of frontier life.",
+    "region": "British Columbia Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Kettle Stones",
+    "lat": 51.5833,
+    "lng": -101.1833,
+    "type": "Geographic Landmark",
+    "founded": "Ancient",
+    "desc": "Sandstone concretions in the Swan-Pelican forest. Traditional harvesting area for families of Pine Creek and Duck Bay.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "Medium"
+  },
+  {
+    "name": "Kinosota",
+    "lat": 51.1558,
+    "lng": -98.9281,
+    "type": "Settlement / Trading Post",
+    "founded": "Oral tradition / approximate",
+    "desc": "Established at the narrows of Lake Manitoba. Relocated in 1828 to oppose independent hunters. Treaty Two signed here in 1871.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "La Chevulure Montagne Post (Hair Hills Post)",
+    "lat": 48.9667,
+    "lng": -98.1167,
+    "type": "Trading Outpost",
+    "founded": "Early 1800s",
+    "desc": "Outpost established by Alexander Henry the Younger in the early 1800s to serve hunters of the Pembina hills.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Laboucane (Duhamel)",
+    "lat": 52.8833,
+    "lng": -112.9667,
+    "type": "Settlement",
+    "founded": "1870s",
+    "desc": "A significant M\u00e9tis agricultural settlement in Alberta, established by families who migrated westward from the Red River Settlement after the 1870 Resistance. The Laboucane family were prominent M\u00e9tis settlers who helped build the community. Duhamel became a center of M\u00e9tis farming and ranching in the Alberta interior, representing the westward expansion of M\u00e9tis settlement and the community's adaptation to new landscapes while maintaining cultural traditions.",
+    "region": "Alberta Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lac des Ch\u00eanes (Flat Creek)",
+    "lat": 49.9833,
+    "lng": -98.7167,
+    "type": "Settlement / Wintering site",
+    "founded": "Late 1860s",
+    "desc": "A traditional M\u00e9tis wintering site that became a permanent settlement by the late 1860s, also known as Oak Lake.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lac Ste. Anne",
+    "lat": 53.7125,
+    "lng": -114.4022,
+    "type": "Mission / Settlement",
+    "founded": "1844",
+    "desc": "A vital historic M\u00e9tis mission and gathering place in Alberta.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lake Metigoshe M\u00e9tis Settlement",
+    "lat": 49.0039,
+    "lng": -100.3553,
+    "type": "Settlement / Wintering site",
+    "founded": "Late 1800s",
+    "desc": "Ancient camping place on Turtle Mountain that became a wintering site for hunters from Grantown. First settlers included Louis Lee Racine.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "High"
+  },
+  {
+    "name": "Lake Pepin",
+    "lat": 44.5,
+    "lng": -92.3,
+    "type": "Reserved Lands / Settlement",
+    "founded": "1830",
+    "desc": "Early United States M\u00e9tis land tract associated with the 1830s land grants made to M\u00e9tis families in Minnesota. Located on the Mississippi River between Wisconsin and Minnesota, it was one of several early M\u00e9tis settlements in the United States. The community had strong kinship connections to the Red River settlements and represented an earlier phase of M\u00e9tis land rights struggles that would echo in the scrip policies of later decades.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "High"
+  },
+  {
+    "name": "Lane's Post",
+    "lat": 49.9547,
+    "lng": -97.7475,
+    "type": "Trading Post / Farm",
+    "founded": "Oral tradition / approximate",
+    "desc": "Managed by William Lane; primarily for farming. Lane was involved in a 1864 plot to capture Dakota leaders using drugged wine.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lane\u2019s Post (St. Fran\u00e7ois Xavier)",
+    "lat": 49.9547,
+    "lng": -97.7475,
+    "type": "Trading Post / Farm Depot",
+    "founded": "1856",
+    "desc": "Established in the 1850s at Pigeon Lake on the Assiniboine River, this post first appears in HBC records in 1856. It was managed by William Lane and was primarily used for its farming operations. The post was located about five miles past the St. Fran\u00e7ois Xavier church. In 1864, it was the site where a plot was hatched to capture Dakota refugee leaders Little Six and Medicine Bottle. They were reportedly lured into a trap and drugged with wine before being bound and transported to Fort Pembina.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Last Mountain Lake",
+    "lat": 50.8167,
+    "lng": -105.15,
+    "type": "Seasonal Camp / Hunt site",
+    "founded": "Historic",
+    "desc": "A historic Metis hunting area in central Saskatchewan, near the South Saskatchewan River and the community of Batoche. Metis families from the Red River settlement used this lake valley as a gathering point for buffalo hunts and as a stopping place along the Carlton Trail. The area provided excellent hunting grounds and served as an important link in the network of Metis communities across Saskatchewan.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lido Plage",
+    "lat": 49.9658,
+    "lng": -97.6833,
+    "type": "Gathering / Recreation Site",
+    "founded": "1931 (Resort)",
+    "desc": "Recreation area on the Assiniboine that hosted the annual \"Old Timers & Pioneers Picnic\". Featured jigging and fiddling contests.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Little Britain",
+    "lat": 50.1,
+    "lng": -96.95,
+    "type": "Settlement",
+    "founded": "1826",
+    "desc": "Early name for Lockport; settled by retiring Orkneymen and families. Known for its landmark Presbyterian church built by master stonemasons.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Little Chicago (Chicago Line)",
+    "lat": 48.9333,
+    "lng": -100.0167,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "Pejorative term for road allowance communities where M\u00e9tis were displaced.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Little Grand Rapids House",
+    "lat": 52.0461,
+    "lng": -95.4608,
+    "type": "Trading Post",
+    "founded": "1848",
+    "desc": "HBC post at Family Lake named for rapids on Berens River. Supplies were delivered by York boat until 1871.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Little Saskatchewan River",
+    "lat": 51.7,
+    "lng": -98.5833,
+    "type": "Geographic Landmark",
+    "founded": "Ancient",
+    "desc": "Originates in Riding Mountain; called \"Rivi\u00e8re Rapide\" by David Thompson. Its valley was a key wintering area for bison.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Longbody Creek (Kenepikiniwewe)",
+    "lat": 51.7661,
+    "lng": -96.6469,
+    "type": "Road Allowance Community",
+    "founded": "1988",
+    "desc": "Established in 1988 for M\u00e9tis displaced from Bloodvein Reserve. The community dispersed within five years as many returned to the reserve.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Loon Straits",
+    "lat": 51.5833,
+    "lng": -96.6,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Fishing and trapping community on eastern shore of Lake Winnipeg. Residents renowned for building seaworthy oak and cedar boats.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lorette (Petit Point du Ch\u00eanes)",
+    "lat": 49.7478,
+    "lng": -96.9114,
+    "type": "Parish / Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "Settled in 1850s by families from central parishes. A community of freighters and buffalo hunters whose cattle grazed along the Seine.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Lorette (Petit Point des Ch\u00eanes)",
+    "lat": 49.7478,
+    "lng": -96.9114,
+    "type": "Parish / Settlement",
+    "founded": "1850s",
+    "desc": "Settled in 1850s by families from central parishes. A community of freighters and buffalo hunters whose cattle grazed along the Seine.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "MacGregor",
+    "lat": 49.9575,
+    "lng": -98.7661,
+    "type": "Road Allowance Community",
+    "founded": "1870s (Documented)",
+    "desc": "Road allowance community west of Portage la Prairie. Residents displaced by the rail line and later lobbied for housing land in 1961.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Mallard (Enniship)",
+    "lat": 51.6833,
+    "lng": -99.4667,
+    "type": "Settlement",
+    "founded": "1895",
+    "desc": "Associated with Skownan Band; named for a nearby lake. Settlers moved here in 1895 for wild game and Seneca root.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Manigotagan (Bad Throat River)",
+    "lat": 51.1064,
+    "lng": -96.3114,
+    "type": "Settlement",
+    "founded": "1904 (Survey)",
+    "desc": "Named for the sound of a waterfall like a bad sound in the throat. Surveyed into 18 river lots in 1904 for M\u00e9tis laborers.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Manitoba House (Kinosota)",
+    "lat": 51.1558,
+    "lng": -98.9281,
+    "type": "Settlement / Trading Post",
+    "founded": "Mid-1790s",
+    "desc": "Location at the narrows of Lake Manitoba where the HBC established Manitoba House in 1796. Treaty Two negotiations took place here 1871. Strategic junction where lake and river trade routes met.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Mapleton",
+    "lat": 50.15,
+    "lng": -96.8667,
+    "type": "Settlement",
+    "founded": "1790 (Peguis arrival)",
+    "desc": "Also called \"Old England,\" home to fur traders and Chief Peguis\u2019 people. Along the Red River north of Lower Fort Garry.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Matheson Island (formerly Snake Island)",
+    "lat": 51.7333,
+    "lng": -96.9333,
+    "type": "Settlement / Stopping Point",
+    "founded": "1867 (Post)",
+    "desc": "Stopping place for York boats renamed in 1903 after Daniel Matheson. Residents descend from Norwegian, English, and Icelandic settlers.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Meadow Portage",
+    "lat": 51.6333,
+    "lng": -99.5833,
+    "type": "Settlement / Stopping Point",
+    "founded": "Early 1900s (Ranching)",
+    "desc": "Located on a narrow strip between Lake Manitoba and Lake Winnipegosis. Fur trade hub and later ranching community.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Metikewap (Wooden/Bark Tent)",
+    "lat": 50.5983,
+    "lng": -96.3117,
+    "type": "Road Allowance Community",
+    "founded": "Historic",
+    "desc": "Road allowance settlement east of The Pas named for bark-covered teepees. Disappeared due to flooding from Grand Rapids dam.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "M\u00e9tis Island",
+    "lat": 50.4167,
+    "lng": -98.0167,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Site of a settlement north of Ross Island at Cross Lake before relocation to Nelson River.",
+    "region": "East Side Lake Winnipeg",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Michipicoten Post",
+    "lat": 47.9333,
+    "lng": -84.9,
+    "type": "Fort / Trading Post",
+    "founded": "Historic",
+    "desc": "Significant Hudson's Bay Company post on the northern shore of Lake Superior, established as a critical transshipment point for goods moving between the Red River Settlement and eastern Canada. The post employed many M\u00e9tis staff who operated the canoe brigades and managed trade across the vast lake. It served as a gateway between the western fur trade networks and the Great Lakes, connecting M\u00e9tis family networks across thousands of kilometers.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Milk River",
+    "lat": 49.1417,
+    "lng": -112.075,
+    "type": "Historic Site",
+    "founded": "Late 1800s",
+    "desc": "A site of major historical significance near the Montana-Alberta border, associated with the 1882 M\u00e9tis deportation attempt. When the Canadian government tried to expel M\u00e9tis families who had crossed into Montana seeking buffalo hunting grounds, many were forcibly relocated. The event is remembered as a tragic chapter in M\u00e9tis history and illustrates the challenges faced by M\u00e9tis whose traditional territories spanned the Canada-US international boundary.",
+    "region": "Montana Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Minnedosa",
+    "lat": 50.2464,
+    "lng": -99.8453,
+    "type": "Settlement / Transportation Hub",
+    "founded": "1869",
+    "desc": "Founded by John Tanner, a Civil War veteran, who built a ferry and store here. Formerly Tanner's Crossing.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Moose Lake (Settlement)",
+    "lat": 54.0167,
+    "lng": -100.35,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Community southeast of The Pas whose traditional livelihood was devastated by dam flooding. Recorded 282 M\u00e9tis in 1958.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Destroyed Communities",
+    "icon": "destroyed",
+    "ic": "#2C3E50",
+    "priority": "Medium"
+  },
+  {
+    "name": "Netley Creek (Rivi\u00e8re aux Morts)",
+    "lat": 50.3667,
+    "lng": -96.9333,
+    "type": "Trading Post / Agricultural site",
+    "founded": "1803 (Post)",
+    "desc": "Site of native horticulture in 1805 where corn and potatoes were grown. HBC established a post here in 1813 with sixty horses.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Norway House and Rossville",
+    "lat": 53.9753,
+    "lng": -97.8083,
+    "type": "Fort / Settlement / Depot",
+    "founded": "1817",
+    "desc": "Transshipment hub where Chief Factors met in council. World-renowned center for building York boats.",
+    "region": "East Side Lake Winnipeg",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Oak Lake (Lac des Ch\u00eanes / M\u00e9tis Wintering Sites)",
+    "lat": 49.7694,
+    "lng": -100.6339,
+    "type": "Settlement / Wintering site",
+    "founded": "Late 1860s",
+    "desc": "Watering stop west of Brandon; became a permanent settlement by late 1860s. Staffed by 50-100 M\u00e9tis men.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Oak Point House and Oak Point",
+    "lat": 50.5053,
+    "lng": -98.0056,
+    "type": "Trading Post / Wintering site",
+    "founded": "1860s (Post)",
+    "desc": "HBC trading post and wintering place for cattle where M\u00e9tis took land grants. Associated with the \"Oak Point Nation\".",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Opaskweyaw (The Pas)",
+    "lat": 53.8247,
+    "lng": -101.2417,
+    "type": "Settlement / Rendezvous Site",
+    "founded": "1741 (Fort); 1840 (Mission)",
+    "desc": "Rendezvous point for Cree and M\u00e9tis hunters. Site of Devon Mission, established by Rev. Henry Budd in 1840.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Oxford House",
+    "lat": 54.9167,
+    "lng": -95.2833,
+    "type": "Fort / Trading Post",
+    "founded": "1798",
+    "desc": "Established on the Hayes River route Midway between York Factory and Norway House. William Sinclair raised 12 children there.",
+    "region": "East Side Lake Winnipeg",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Park Valley",
+    "lat": 53.5167,
+    "lng": -106.6667,
+    "type": "Settlement Hub",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis settlement hub in Saskatchewan mentioned in M\u00e9tis historical records as a significant community area. The valley served as a gathering place for hunting brigades and was part of the network of M\u00e9tis communities that stretched across the western prairies. Families in Park Valley maintained connections to other settlements through kinship, trade, and seasonal migration.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pembina",
+    "lat": 48.9667,
+    "lng": -97.2442,
+    "type": "Settlement / Trading Post",
+    "founded": "1797 (HBC Post)",
+    "desc": "Named for buffalo wool rubbed off on trees. Strategic wintering spot for hunters and site of early trading outposts.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Petit Point de Roches",
+    "lat": 49.9167,
+    "lng": -97.05,
+    "type": "Settlement (River Lot)",
+    "founded": "Mid-1800s",
+    "desc": "Red River community north of Ste. Agathe inhabited by buffalo hunters and freighters.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Petit Point du Ch\u00eanes (Lorette)",
+    "lat": 49.7478,
+    "lng": -96.9114,
+    "type": "Parish / Settlement",
+    "founded": "1850s",
+    "desc": "Settled 1850s by families from central Red River parishes. Community of freighters and buffalo hunters whose cattle grazed the Seine River. Bishop Tache renamed the parish to Lorette.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pikwitonei",
+    "lat": 55.5892,
+    "lng": -97.1481,
+    "type": "Settlement (Railway)",
+    "founded": "1914",
+    "desc": "Railway division point where M\u00e9tis engaged in track maintenance and sturgeon fishery. Division point until 1972.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pine Bluff",
+    "lat": 53.7167,
+    "lng": -101.4167,
+    "type": "Settlement",
+    "founded": "1874",
+    "desc": "Self-sufficient settlement southeast of The Pas established as early as 1874. Entirely flooded by the Grand Rapids Dam.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pine Dock (Bullhead)",
+    "lat": 51.65,
+    "lng": -96.8833,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Community on Lake Winnipeg historically known as Bullhead.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pine Fort",
+    "lat": 49.6167,
+    "lng": -99.2333,
+    "type": "Fort / Trading Post",
+    "founded": "1768 (Fort des \u00c9pinettes)",
+    "desc": "Lowest post on Assiniboine; chief trade hub for Mandan Indians. Abandoned in 1794.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pointe \u00e0 Grouette",
+    "lat": 49.5606,
+    "lng": -97.1264,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "Settlement of hunters and salt makers where most were disenfranchised after 1870. Known as Petite Pointe \u00e0 Saline.",
+    "region": "Southern Red River Valley",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "High"
+  },
+  {
+    "name": "Pointe \u00e0 Grouette (Petite Pointe \u00e0 Saline, St. Agathe)",
+    "lat": 49.5606,
+    "lng": -97.1264,
+    "type": "Settlement / Parish",
+    "founded": "Mid-1800s",
+    "desc": "Settlement of hunters and salt makers where most were disenfranchised after 1870. Known as Petite Pointe \u00e0 Saline.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "Pointe Coup\u00e9e (St. Adolphe)",
+    "lat": 49.6764,
+    "lng": -97.1136,
+    "type": "Parish / Settlement",
+    "founded": "Early 1800s",
+    "desc": "Red River parish founded by M\u00e9tis in early 1800s. Site of 1869 Resistance action against surveyors.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "Pointe des Ch\u00eanes (Grande Pointe des Ch\u00eanes, Ste. Anne de Ch\u00eanes)",
+    "lat": 49.6633,
+    "lng": -96.5986,
+    "type": "Settlement",
+    "founded": "1850s",
+    "desc": "Woodcutting center where residents were primary laborers for Dawson Road. Enraged by John Snow ignoring boundaries.",
+    "region": "Southern Red River Valley",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Pointe du Chien-Maigre",
+    "lat": 49.6,
+    "lng": -97.1167,
+    "type": "Historic Site / Fort",
+    "founded": "Historic",
+    "desc": "A historic M\u00e9tis name for the Carlton House area in Saskatchewan. The name reflects the Indigenous understanding of the landscape and was used by M\u00e9tis who knew the area long before it appeared on colonial maps. Carlton House (also known as Carlton Lake) was an important trading post that connected the Saskatchewan River system to broader fur trade networks.",
+    "region": "Southern Red River Valley",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Poitras House",
+    "lat": 49.6333,
+    "lng": -97.2333,
+    "type": "Trading Post",
+    "founded": "1807",
+    "desc": "HBC post near Brandon named for the M\u00e9tis trader in charge.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Poplar Point",
+    "lat": 50.0006,
+    "lng": -98.0017,
+    "type": "Parish / Settlement",
+    "founded": "1850s",
+    "desc": "Settlement featuring a log church with a bell from York Factory. Church completed in 1864.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Portage La Loche",
+    "lat": 56.5667,
+    "lng": -109.5833,
+    "type": "Transportation Hub",
+    "founded": "Historic",
+    "desc": "One of the longest and most challenging portages in the North American fur trade. Located on the Churchill River system in Saskatchewan, it required M\u00e9tis voyageurs to carry heavy loads between waterways. The community at Portage La Loche was a critical brigade hub where M\u00e9tis freighters and their families gathered, traded, and maintained their culture. Today it is recognized as a significant M\u00e9tis cultural heritage site.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Prairie \u00e0 Fournier",
+    "lat": 49.55,
+    "lng": -97.1333,
+    "type": "Mission / Settlement site",
+    "founded": "1834",
+    "desc": "Mission site east of St. Eustache on land gifted by Governor Simpson. Nolin sisters opened a school here in 1834.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rabbit Point (Princess Harbour)",
+    "lat": 51.9833,
+    "lng": -97.05,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Small peninsula on Lake Winnipeg near Bloodvein Bay. Positioned 304 air km north of Winnipeg.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rall\u2019s (Rahls) Island (Settlement)",
+    "lat": 53.8333,
+    "lng": -101.1833,
+    "type": "Road Allowance Community",
+    "founded": "1915",
+    "desc": "Road allowance community downstream from The Pas. Founded by Charles Rall and Elizabeth Knight.",
+    "region": "Alberta Homeland",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Rat Portage",
+    "lat": 49.7667,
+    "lng": -94.4833,
+    "type": "Settlement",
+    "founded": "1882 (Incorporation)",
+    "desc": "Disputed area between Manitoba and Ontario (today's Kenora).",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rat River (Rivi\u00e8re aux Rats)",
+    "lat": 49.4667,
+    "lng": -97.1333,
+    "type": "Settlement / Wintering site",
+    "founded": "1822-1825",
+    "desc": "Wintering site with plentiful hay and wood. Surrounds the present community of St. Pierre Jolys.",
+    "region": "Southern Red River Valley",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Red Deer Lake",
+    "lat": 52.9167,
+    "lng": -101.3167,
+    "type": "Trading Post site / Settlement",
+    "founded": "1794 (Post)",
+    "desc": "This cluster of five M\u00e9tis communities is located on the edge of the Porcupine Forest near the former Fort Red Deer River trading post. Barrows served as a major lumber town for the Red Deer Lumber Company until the sawmill closed around 1927. Baden was the largest of these communities in 1959 with 130 residents.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Red River Settlements (North of Upper Fort Garry)",
+    "lat": 49.95,
+    "lng": -97.1,
+    "type": "Settlement / Parish",
+    "founded": "Pre-1870",
+    "desc": "Network of narrow river lots extending north, home to hunters and farmers. Lots extended two miles east and west of river.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Riding Mountain",
+    "lat": 50.6667,
+    "lng": -99.4167,
+    "type": "Historic Site / Landmark",
+    "founded": "Ancient",
+    "desc": "Known as Manitouapau Hills or \"Hill of the Buffalo Hunt\". Sacred grounds for elk and a strategic migration route.",
+    "region": "Swan River - Dauphin Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rivi\u00e8re aux Islets de Bois (Carman)",
+    "lat": 49.4994,
+    "lng": -98.0017,
+    "type": "Settlement",
+    "founded": "1825",
+    "desc": "Winding river site famous for cart builders and \"sugar lots\". Now called Boyne River.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rivi\u00e8re Esturgeon (St. Charles)",
+    "lat": 49.88,
+    "lng": -97.3,
+    "type": "Parish / Settlement",
+    "founded": "Early 1800s",
+    "desc": "M\u00e9tis community west of Sturgeon Creek with a buffalo crossing and ferry. Formally renamed St. Charles in 1854.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rivi\u00e8re Gratchias (Morris)",
+    "lat": 49.3528,
+    "lng": -97.3331,
+    "type": "Settlement / Transportation site",
+    "founded": "Historic",
+    "desc": "Rest stop for Red River carts making their way south to St. Paul. Named for the abundant burdock (gratchias).",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rivi\u00e8re Sale (St. Norbert)",
+    "lat": 49.7611,
+    "lng": -97.1517,
+    "type": "Parish / Settlement",
+    "founded": "1822",
+    "desc": "Settlement dating back to 1822; cradle of the 1869-70 Resistance. Site of the famous wooden blockade turned back McDougall.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "Rivi\u00e8re St. Pierre",
+    "lat": 49.4456,
+    "lng": -97.0422,
+    "type": "Geographic Feature",
+    "founded": "1734",
+    "desc": "An early explorer name for the Souris River and the Little Saskatchewan River.",
+    "region": "Southern Red River Valley",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rock Lake (Lac des Roches)",
+    "lat": 49.2167,
+    "lng": -99.2,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "Source of Pembina River; inhabited by descendants of Henry\u2019s M\u00e9tis employees. People intermarried with Nakoda and Chippewa Cree.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Rooster Town",
+    "lat": 49.86,
+    "lng": -97.16,
+    "type": "Road Allowance Community",
+    "founded": "Oral tradition / approximate",
+    "desc": "Last known road allowance community in Winnipeg, located between railway tracks. Named Pakan Town for hazelnuts. Evicted in 1959 to make way for a shopping mall and school.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Rooster Town (Pakan Town)",
+    "lat": 49.86,
+    "lng": -97.16,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "Last known road allowance community in Winnipeg, located between railway tracks. Named Pakan Town for hazelnuts. Evicted in 1959 to make way for a shopping mall and school.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Salt Point M\u00e9tis Settlement",
+    "lat": 52.0167,
+    "lng": -99.5833,
+    "type": "Settlement",
+    "founded": "1800s",
+    "desc": "A community stretching along a five-kilometre section of the east shore of Lake Winnipegosis, accessed via PR #276. In the 1800s, the Monkman family operated a large-scale salt-making enterprise here, preparing salt by evaporation for the Hudson's Bay Company.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "Medium"
+  },
+  {
+    "name": "Sandy Bay",
+    "lat": 50.5333,
+    "lng": -98.6333,
+    "type": "Settlement",
+    "founded": "1871",
+    "desc": "Originally the White Mud Band, these Ojibway-French mixed-bloods were relocated multiple times\u2014first 20 miles north of Westbourne, then straight north in 1873, and finally to the current site in 1877 due to a surveyor\u2019s error. In 1885, many members were pressured into withdrawing from Treaty to take scrip.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "Sault \u00e0 la Biche (Deer Rapids, St. Andrews)",
+    "lat": 50.05,
+    "lng": -96.9167,
+    "type": "Settlement",
+    "founded": "Early 1800s",
+    "desc": "Located at the limestone rapids of the Red River south of Selkirk. It was chosen for early Indian and M\u00e9tis settlements because the high ground offered protection from the massive floods that frequently devastated the Forks. The Selkirk Settlers later renamed the area St. Andrews.",
+    "region": "Ontario Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Saulteaux Village",
+    "lat": 49.9822,
+    "lng": -97.9011,
+    "type": "Parish / Settlement",
+    "founded": "1832",
+    "desc": "A French-M\u00e9tis parish on the Assiniboine River between St. Fran\u00e7ois Xavier and Poplar Point. Father Belcourt founded the mission to transition the M\u00e9tis and Saulteaux to a sedentary lifestyle by providing plows and oxen to plant potatoes, corn, and oats. The settlement included a school led by the Nolin sisters, who were fluent in French, English, Ojibwa, and Cree.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "Selby Town",
+    "lat": 50.47,
+    "lng": -101.28,
+    "type": "Road Allowance Community",
+    "founded": "1939",
+    "desc": "A M\u00e9tis road allowance community south of Binscarth. It was settled in 1939 by refugees from Ste. Madeleine after their original homes were burned. The community was sarcastically named \"Selby Town\" after one of the municipal officials the M\u00e9tis blamed for their displacement.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Seven Oaks (Sept Ch\u00eanes)",
+    "lat": 49.9325,
+    "lng": -97.1189,
+    "type": "Historic Site (Battlefield)",
+    "founded": "June 19, 1816",
+    "desc": "Site of the 1816 battle known to the M\u00e9tis as La battaille de la Grenouill\u00e8re (Battle of Frog Plain). The conflict began when HBC Governor Semple's men opened fire on a M\u00e9tis brigade led by Cuthbert Grant. The M\u00e9tis victory is commemorated as a defining moment of national identity.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Battles & Resistance",
+    "icon": "battle",
+    "ic": "#C0392B",
+    "priority": "High"
+  },
+  {
+    "name": "Shoal River",
+    "lat": 52.75,
+    "lng": -100.7,
+    "type": "Settlement / Trading Post",
+    "founded": "Oral tradition / approximate",
+    "desc": "An HBC post located on Pelican Lake, which was part of the Shoal River system in western Manitoba. It served as a trade hub for the local Cree-Saulteaux Band and was connected to the settlement at Pelican Rapids. The post was an important link in the Metis fur trade network. The area remains an important cultural landscape for Metis, Cree, and Saulteaux communities.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Shoal River House",
+    "lat": 52.75,
+    "lng": -100.7,
+    "type": "Trading Post",
+    "founded": "Historic",
+    "desc": "An HBC post located on Pelican Lake, which was part of the Shoal River system. It served as a trade hub for the local Cree-Saulteaux Band and was connected to the settlement at Pelican Rapids.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Skownan, Rock Ridge and Mallard M\u00e9tis Settlements",
+    "lat": 51.6833,
+    "lng": -99.4667,
+    "type": "Settlement",
+    "founded": "1895 (Mallard)",
+    "desc": "A cluster of settlements on the south shore of Waterhen Lake. Skownan is a Cree name meaning \"to turn around the point.\" These communities were originally mixed Saulteaux-M\u00e9tis bands that utilized the rich resources of the lake for hunting and fishing.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Smokey River",
+    "lat": 55.45,
+    "lng": -118.2,
+    "type": "Settlement Hub",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis settlement in Alberta with significant historical connections to the scrip applications of western M\u00e9tis families. Located in western Alberta territory, it represents the farthest reach of Red River M\u00e9tis migration into the Rocky Mountain foothills. The community was documented in M\u00e9tis historical records as a place where families maintained their traditions despite pressure to assimilate.",
+    "region": "Alberta Homeland",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "South Indian Lake M\u00e9tis Settlement",
+    "lat": 56.7833,
+    "lng": -98.9167,
+    "type": "Settlement",
+    "founded": "1803 (Original Post)",
+    "desc": "A northern community linked to the Churchill River and Reindeer Lake fur trade networks. This area supported a specialized lifestyle of commercial fishing and trapping. The settlement represents the resilience of northern M\u00e9tis families who adapted to the harsh boreal environment, maintaining economic independence through the harvest of high-value furs and fish for southern markets.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Spring Creek (Lewistown)",
+    "lat": 47.0625,
+    "lng": -109.4281,
+    "type": "Settlement",
+    "founded": "Late 1800s",
+    "desc": "Located in Montana, this site is recognized for its first Catholic pioneers from the M\u00e9tis community. It was a significant destination for M\u00e9tis families migrating south from the Red River Settlement during the late 1800s.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Adolphe",
+    "lat": 49.6764,
+    "lng": -97.1136,
+    "type": "Parish / Settlement",
+    "founded": "Early 1800s",
+    "desc": "Red River parish founded by M\u00e9tis in early 1800s. Site of 1869 Resistance action against surveyors.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "St. Ambroise",
+    "lat": 50.2742,
+    "lng": -98.0772,
+    "type": "Settlement",
+    "founded": "1870 (Relocation)",
+    "desc": "A small M\u00e9tis community on the southeast tip of Lake Manitoba. After 1870, many M\u00e9tis relocated here to \"scrub land\" that was independent and self-sufficient. The community relied heavily on the October whitefish run and harvesting saskatoon berries.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Resource & Harvesting Sites",
+    "icon": "resource",
+    "ic": "#16A085",
+    "priority": "High"
+  },
+  {
+    "name": "St. Ambroise Dakota Entrenchment (Historic Site)",
+    "lat": 50.2764,
+    "lng": -98.0753,
+    "type": "Historic / Defensive Site",
+    "founded": "1864",
+    "desc": "A continuous circular earthen embankment 114 metres in diameter with interior rifle pits. It was built by a group of Dakota led by \"The Leaf\" who were fleeing bounty hunters in 1864. The site is a rare example of a \u0107unka\u015bke (Nation of the Forts) defensive structure.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Andrews",
+    "lat": 50.0667,
+    "lng": -96.9167,
+    "type": "Parish / Settlement",
+    "founded": "1823",
+    "desc": "Located at the limestone rapids of the Red River south of Selkirk. It was chosen for early Indian and M\u00e9tis settlements because the high ground offered protection from the massive floods that frequently devastated the Forks. The Selkirk Settlers later renamed the area St. Andrews.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Anne de Ch\u00eanes",
+    "lat": 49.6633,
+    "lng": -96.5986,
+    "type": "Settlement",
+    "founded": "1850s",
+    "desc": "Woodcutting center where residents were primary laborers for the Dawson Road. Enraged when surveyor John Snow ignored their established boundaries. Hub for woodcutting industry supplying Winnipeg.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Boniface",
+    "lat": 49.8906,
+    "lng": -97.1197,
+    "type": "Parish / Settlement Hub",
+    "founded": "1818",
+    "desc": "Named by Bishop Provencher in honor of an English missionary. It was the historic center of the Red River Settlement and the administrative heart of the M\u00e9tis Nation. Provencher famously said it would take \"the faith of a Boniface\" to work with the M\u00e9tis.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Charles",
+    "lat": 49.88,
+    "lng": -97.3,
+    "type": "Parish / Settlement",
+    "founded": "Early 1800s",
+    "desc": "The location of \"The Passage,\" a natural ford for Red River carts. Among the earliest settlers on the river lot farms were the Beauchemin, Hogue, and Morrissette families.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Eustache (formerly Baie St. Paul)",
+    "lat": 49.9742,
+    "lng": -97.8506,
+    "type": "Settlement / Road Allowance",
+    "founded": "1898",
+    "desc": "Originally part of the Baie St. Paul parish, the mission was destroyed by extensive flooding in 1882. Many residents relocated to North Dakota, but Bishop Tache sent missionary Thomas Quevillion to find a new, higher site. St. Eustache was established in January 1898 and named after the patron saint of hunters. In 1958, it was recorded as a large road allowance community with 434 M\u00e9tis residents.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "St. Fran\u00e7ois Xavier",
+    "lat": 49.9197,
+    "lng": -97.5511,
+    "type": "Parish / Settlement",
+    "founded": "1823",
+    "desc": "Established by Cuthbert Grant in 1823 as a buffer for the Red River Settlement. First industrial site in Manitoba for cart construction.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "St. Joseph (Walhalla)",
+    "lat": 48.9228,
+    "lng": -97.9172,
+    "type": "Mission / Settlement",
+    "founded": "1853",
+    "desc": "This location in North Dakota was where Father Belcourt moved his mission and school in 1853, thirty miles west of Pembina. It became a significant hub for M\u00e9tis families who were forced to leave the Red River Settlement or Pembina due to international boundary shifts. It was also the home of John Tanner before he enlisted in the Union Army during the American Civil War.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Laurent",
+    "lat": 50.4194,
+    "lng": -98.005,
+    "type": "Settlement",
+    "founded": "1824",
+    "desc": "Established by M\u00e9tis forced to leave Pembina when it became American territory. Residents maintained a strong Michif identity despite church and school pressure to adopt standard French.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Mary\u2019s (Portage la Prairie)",
+    "lat": 49.9625,
+    "lng": -98.3106,
+    "type": "Parish / Settlement",
+    "founded": "1853",
+    "desc": "Founded in 1853 by Reverend William Cockran and families from Middlechurch and St. Andrews. The settlers moved westward as the good river lots near the Forks were exhausted, seeking new farmland along the Assiniboine.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Norbert",
+    "lat": 49.7611,
+    "lng": -97.1517,
+    "type": "Parish / Settlement",
+    "founded": "1822",
+    "desc": "Settlement dating back to 1822; cradle of the 1869-70 Resistance. Site of the famous wooden blockade turned back McDougall.",
+    "region": "Southern Red River Valley",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "St. Peter's Mission",
+    "lat": 47.4167,
+    "lng": -111.75,
+    "type": "Mission",
+    "founded": "Historic",
+    "desc": "A significant Jesuit mission in Montana that educated M\u00e9tis students in the late nineteenth century. The mission was part of a broader network of Catholic missions that influenced M\u00e9tis communities. Some of its students were contemporaries of M\u00e9tis resistance leaders and were shaped by the same political and land rights struggles that defined the era. The mission represents the intersection of Catholic education, M\u00e9tis culture, and the political awakening of a generation.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "St. Pierre",
+    "lat": 49.4456,
+    "lng": -97.0422,
+    "type": "Settlement / Wintering site",
+    "founded": "1822",
+    "desc": "An early explorer name for the Souris River and the Little Saskatchewan River.",
+    "region": "Southern Red River Valley",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "St. Vital",
+    "lat": 49.8206,
+    "lng": -97.1086,
+    "type": "Settlement",
+    "founded": "1824",
+    "desc": "Site of the early M\u00e9tis river lots for families like the Riels, Naults, and Bruces. It developed along a broad elbow of the Red River south of St. Boniface. The Grey Nuns opened a school here in 1860.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "High"
+  },
+  {
+    "name": "Ste. Madeleine",
+    "lat": 50.45,
+    "lng": -101.35,
+    "type": "Settlement (Destroyed)",
+    "founded": "1870s",
+    "desc": "A traditional community of over twenty families homesteaded since the 1870s. In 1938, the town was destroyed to create a community pasture. Homes were burned, dogs were shot, and the church was dismantled.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Destroyed Communities",
+    "icon": "destroyed",
+    "ic": "#2C3E50",
+    "priority": "High"
+  },
+  {
+    "name": "Ste. Rose du Lac",
+    "lat": 51.1147,
+    "lng": -99.4914,
+    "type": "Settlement",
+    "founded": "1889",
+    "desc": "Established in 1889 by families from St. Vital looking for haylands to overwinter their animals. Led by the sons of Jean Baptiste Spence and guided by John Desmarais, they settled on the Turtle River.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Stony Mountain",
+    "lat": 50.0886,
+    "lng": -97.225,
+    "type": "Sanctuary / Landmark",
+    "founded": "1870 (Homestead)",
+    "desc": "Known as \"Snake Indian Hills,\" it was a high-ground sanctuary used for centuries to escape Red River floods. The \"Faith Trail\" brought settlers in ox-drawn carts to the region.",
+    "region": "Lake Winnipegosis - Duck Bay Region",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Stovepipe (Tuyau)",
+    "lat": 53.9695,
+    "lng": -110.1767,
+    "type": "Road Allowance Community",
+    "founded": "Mid-1800s",
+    "desc": "A road allowance tent community in the Ste. Anne area inhabited by the families of woodcutters working in the forests to the east. The name \"Stovepipe\" referred to the makeshift stovepipes poking through the tent roofs.",
+    "region": "Southern Red River Valley",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Sugar Island (Lake Manitoba)",
+    "lat": 51.1,
+    "lng": -98.9,
+    "type": "Traditional Harvesting Site",
+    "founded": "Ancient",
+    "desc": "A historic maple sugaring site for the M\u00e9tis of Ebb and Flow and Bacon Ridge. Families like that of \"Nonoonse\" returned every spring for over forty years to continue the traditions of their grandmothers.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Summerberry Marsh",
+    "lat": 53.8333,
+    "lng": -100.8333,
+    "type": "Traditional Harvesting Area",
+    "founded": "Historic",
+    "desc": "A massive drainage basin east of The Pas used for muskrat trapping. The traditional livelihood was destroyed by the Grand Rapids Dam, leading to a long struggle for compensation by the M\u00e9tis Federation.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Destroyed Communities",
+    "icon": "destroyed",
+    "ic": "#2C3E50",
+    "priority": "High"
+  },
+  {
+    "name": "Swan Creek",
+    "lat": 50.6,
+    "lng": -98.05,
+    "type": "Settlement",
+    "founded": "Pre-1871",
+    "desc": "Located north of St. Laurent near Monkman\u2019s Point. It was inhabited primarily by the Monkman family and their relations, who eventually moved to St. Laurent to form a larger M\u00e9tis hub.",
+    "region": "Lake Winnipegosis & Manitoba Basin",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Swan River (and Swan River House)",
+    "lat": 52.1081,
+    "lng": -101.2647,
+    "type": "Fort / Trading Post",
+    "founded": "1790",
+    "desc": "Established in 1790 by the HBC and Cuthbert Grant. The post\u2019s primary purpose was to trade for birch bark for canoe-making. Many modern M\u00e9tis families trace their roots to the men who operated this post.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Tanner\u2019s Crossing (Minnedosa)",
+    "lat": 50.2464,
+    "lng": -99.8453,
+    "type": "Settlement / Transportation Hub",
+    "founded": "1869",
+    "desc": "Founded by John Tanner, a veteran of the American Civil War, who built a ferry and store here on the Carlton Trail. The name was changed to Minnedosa in 1883 by land speculators.",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Teton River",
+    "lat": 47.8167,
+    "lng": -110.6667,
+    "type": "Settlement / Wintering site",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis wintering and hunting quarter on the South Fork of the Teton River in Montana. Used by plains M\u00e9tis who had crossed the international boundary in pursuit of buffalo herds. The site was part of a network of seasonal camps that connected Montana communities to the Red River homeland through marriage and trade. The river valley provided excellent hunting and winter shelter for M\u00e9tis brigades and their families.",
+    "region": "Montana Homeland",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "The Corner (Li Kwayn)",
+    "lat": 50.4689,
+    "lng": -101.2989,
+    "type": "Road Allowance Community",
+    "founded": "1939",
+    "desc": "A road allowance community near Binscarth for Ste. Madeleine refugees. Located on a former gravel pit, residents built the St. Hubert Church using logs salvaged from their burned village.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "The Pas",
+    "lat": 53.8247,
+    "lng": -101.2417,
+    "type": "Settlement / Rendezvous Site",
+    "founded": "1741 (Fort)",
+    "desc": "Rendezvous point for Cree and M\u00e9tis hunters. Site of Devon Mission, established by Rev. Henry Budd in 1840.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "Medium"
+  },
+  {
+    "name": "The Passage (Charleswood)",
+    "lat": 49.8517,
+    "lng": -97.2831,
+    "type": "Transportation Landmark",
+    "founded": "Early 1800s",
+    "desc": "A natural ford for buffalo and Red River carts where the Assiniboine River was shallow. It was used by independent traders to bypass the HBC monopoly at the Forks.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Thicket Portage",
+    "lat": 55.3217,
+    "lng": -97.6881,
+    "type": "Settlement (Railway)",
+    "founded": "1914 (Rail)",
+    "desc": "Located on the Hudson Bay Railway line. Before the rail, the M\u00e9tis here operated York boats and dog teams. The community was a key sturgeon fishing camp known as \"The Fiddle.\"",
+    "region": "Western Parishes & Carlton Trail",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "Medium"
+  },
+  {
+    "name": "Thomas M\u00e9tis Settlement",
+    "lat": 50.47,
+    "lng": -101.28,
+    "type": "Road Allowance Community",
+    "founded": "1930s",
+    "desc": "A road allowance community outside of The Pas named for the founding family. It was represented by the Northern Halfbreed Association starting in the 1930s.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Tin Town",
+    "lat": 53.82,
+    "lng": -101.25,
+    "type": "Road Allowance Community",
+    "founded": "1930s",
+    "desc": "A road allowance community south of Rooster Town in Winnipeg. It was built from scrap metal and tin by destitute families during the Depression.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Tokyo at Crescent Lake",
+    "lat": 50.4,
+    "lng": -102.5,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis community located near Crescent Lake in Saskatchewan. It is listed as one of the many dispersed settlements that formed after the migrations of the late 19th century.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Totogan",
+    "lat": 50.15,
+    "lng": -98.3167,
+    "type": "Settlement (Abandoned)",
+    "founded": "1870s",
+    "desc": "A settlement at the junction of Rat Creek and Whitemud River. Its name means \"low, swampy land.\" It was once touted as the \"New Chicago\" before extreme floods in the 1880s led to its abandonment.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Turtle Mountain",
+    "lat": 49.0531,
+    "lng": -100.1836,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "A favorite wintering spot with abundant game. Turtle Mountain House was established in 1846 and operated by Antoine Desjarlais until 1855. It was a site of M\u00e9tis resistance and starvation during the \"winter of 1894.\"",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "High"
+  },
+  {
+    "name": "Turtle Mountain (and Turtle Mountain House)",
+    "lat": 49.0531,
+    "lng": -100.1836,
+    "type": "Landmark / Settlement",
+    "founded": "1846 (Post)",
+    "desc": "A favorite wintering spot with abundant game. Turtle Mountain House was established in 1846 and operated by Antoine Desjarlais until 1855. It was a site of M\u00e9tis resistance and starvation during the \"winter of 1894.\"",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "High"
+  },
+  {
+    "name": "Umphreville or Humphreville (Settlement)",
+    "lat": 53.84,
+    "lng": -101.21,
+    "type": "Road Allowance Community",
+    "founded": "1900s",
+    "desc": "A road allowance community northeast of The Pas named for its patriarch, John Umphreville. The family was connected to a vast kinship network extending from Moose Lake to Prince Albert.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Upper Athabasca",
+    "lat": 54.8167,
+    "lng": -118.0,
+    "type": "Settlement Hub",
+    "founded": "Historic",
+    "desc": "This region's history is characterized as an Upper Athabasca Ethnohistory, involving the Snare, Snake, and Iroquois-M\u00e9tis people. It was a key area for the northwestern fur trade and the Iroquois voyageur families who settled there.",
+    "region": "Northern NWT Homeland",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Upper Fort Garry",
+    "lat": 49.8886,
+    "lng": -97.1308,
+    "type": "Fort / administrative center",
+    "founded": "1822",
+    "desc": "Network of narrow river lots extending north, home to hunters and farmers. Lots extended two miles east and west of river.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "High"
+  },
+  {
+    "name": "Wabowden",
+    "lat": 54.9142,
+    "lng": -98.6258,
+    "type": "Settlement",
+    "founded": "Late 1800s",
+    "desc": "Originally located at Setting Lake on the Grass River route, it relocated to Bowden Lake with the railway in the 1920s. It remains a major center for commercial fishing in the north.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Waterhen River (Rivi\u00e8re de la Poule d'Eau)",
+    "lat": 51.7289,
+    "lng": -99.5317,
+    "type": "Transportation Route",
+    "founded": "Historic",
+    "desc": "The primary outflow for Lake Winnipegosis into Lake Manitoba. It was a vital transportation route used by M\u00e9tis and Saulteaux hunters to move between St. Laurent and Duck Bay.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Wekusko (Herb) Lake",
+    "lat": 54.8333,
+    "lng": -99.75,
+    "type": "Settlement (Mining town)",
+    "founded": "1914",
+    "desc": "A mining supply center developed after gold was discovered in gold-bearing quartz in 1914. Former MMF President Ed Head worked here as a diamond-driller.",
+    "region": "Cedar Lake & Grand Rapids Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Wheat City",
+    "lat": 49.8483,
+    "lng": -99.95,
+    "type": "Settlement",
+    "founded": "1820s",
+    "desc": "A M\u00e9tis community in Charleswood dating to the 1820s, located near a buffalo crossing. Families like the Branconniers and Morrissettes worked as harvest laborers and ferrymen.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Transportation Routes",
+    "icon": "transport",
+    "ic": "#2980B9",
+    "priority": "Medium"
+  },
+  {
+    "name": "Whiskey Flats",
+    "lat": 49.0167,
+    "lng": -113.1167,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "A M\u00e9tis road allowance community in Alberta, part of a network of informal settlements where displaced M\u00e9tis families lived after losing their land. Known for pejorative names and exclusion from municipal services. Residents lived without water, sewage, or electricity, but maintained strong community bonds and M\u00e9tis cultural identity. Like other road allowance communities across the prairies, Whiskey Flats represents the resilience of M\u00e9tis families who built meaningful lives despite systemic discrimination.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "White Mud River",
+    "lat": 50.15,
+    "lng": -98.3167,
+    "type": "Settlement",
+    "founded": "Oral tradition / approximate",
+    "desc": "First named \"White Mud River Settlement\" after the color of the clay on its banks. It was a hunter's village with a small church and burial ground.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "White Mud River Settlement (Rat Creek and Totogan)",
+    "lat": 50.15,
+    "lng": -98.3167,
+    "type": "Settlement (Abandoned)",
+    "founded": "Historic",
+    "desc": "First named \"White Mud River Settlement\" after the color of the clay on its banks. It was a hunter's village with a small church and burial ground.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Parishes & Missions",
+    "icon": "parish",
+    "ic": "#1ABC9C",
+    "priority": "High"
+  },
+  {
+    "name": "Whiteway Point",
+    "lat": 51.6833,
+    "lng": -96.8833,
+    "type": "Trading Post (Outpost)",
+    "founded": "Pre-1859",
+    "desc": "A point on the narrows of Lake Winnipeg named after the HBC official in charge of the post. It is now called West Doghead Point.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Williams County",
+    "lat": 48.3333,
+    "lng": -103.5,
+    "type": "Settlement",
+    "founded": "Historic",
+    "desc": "A M\u00e9tis community in northwestern North Dakota along the Montana border. Families here had land holdings and kinship ties that spanned the Canada-US boundary. The community represents the southern extension of the M\u00e9tis homeland and the families whose connections to the Red River area persisted despite the international border. Members took scrip in the 1880s and were part of the broader M\u00e9tis land rights struggle.",
+    "region": "Turtle Mountain - Pembina Region",
+    "layer": "Communities & Settlements",
+    "icon": "community",
+    "ic": "#3498DB",
+    "priority": "Medium"
+  },
+  {
+    "name": "Willow Bunch",
+    "lat": 49.3986,
+    "lng": -105.6917,
+    "type": "Settlement / Wintering site",
+    "founded": "Historic",
+    "desc": "A vital hivernant (wintering) community in Saskatchewan. It was a major destination for M\u00e9tis families after the 1870 and 1885 Resistance movements. Historically known as Talle de Saules, this was a vital hivernant community in Saskatchewan.",
+    "region": "Saskatchewan Homeland - Batoche Region",
+    "layer": "Wintering Grounds & Camps",
+    "icon": "wintering",
+    "ic": "#27AE60",
+    "priority": "High"
+  },
+  {
+    "name": "Willow Flats",
+    "lat": 49.0,
+    "lng": -105.0,
+    "type": "Road Allowance Community",
+    "founded": "Early 1900s",
+    "desc": "A M\u00e9tis road allowance community located in the Northwest Territories. It is part of the extensive northern network of M\u00e9tis settlements characterized by displacement and landlessness.",
+    "region": "Northern NWT Homeland",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  },
+  {
+    "name": "Winnipeg-St. Boniface",
+    "lat": 49.8906,
+    "lng": -97.1197,
+    "type": "Parish / Settlement Hub",
+    "founded": "1818",
+    "desc": "The historic heart of the Red River M\u00e9tis Homeland, this area served as the administrative, religious, and political center. St. Boniface was named by Bishop Provencher, who said it would take \"the faith of a Boniface\" to work with the M\u00e9tis. The region is covered in multiple census databases (1901, 1911, 1916) and was the site of the Legislative Assembly of Assiniboia.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Governance & Rights",
+    "icon": "governance",
+    "ic": "#D4AC0D",
+    "priority": "High"
+  },
+  {
+    "name": "Winnipegosis",
+    "lat": 51.6553,
+    "lng": -99.9239,
+    "type": "Settlement",
+    "founded": "1741 (Fort)",
+    "desc": "Named for the Cree word meaning \"Little Muddy Water.\" It was the site of the 1741 Fort Dauphin and later a major center for the 20th-century timber and fishing booms.",
+    "region": "Winnipeg - St. Boniface Core",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "York Factory",
+    "lat": 57.0017,
+    "lng": -92.3047,
+    "type": "Fort / Trading Post",
+    "founded": "1684",
+    "desc": "The central base of operations for the HBC fur trade for centuries. It featured a massive octagonal star fort designed to withstand naval attacks.",
+    "region": "Other / Dispersed Communities",
+    "layer": "Forts & Trading Posts",
+    "icon": "fort",
+    "ic": "#8E44AD",
+    "priority": "Medium"
+  },
+  {
+    "name": "Young Point Settlement",
+    "lat": 51.7833,
+    "lng": -101.2167,
+    "type": "Road Allowance Community",
+    "founded": "1950s (Census)",
+    "desc": "A road allowance community south of The Pas in the Pasquia Settlement named for Josiah Young. It was excluded from town boundaries, denying residents basic services.",
+    "region": "The Pas & Northern Manitoba",
+    "layer": "Road Allowance Communities",
+    "icon": "road_allowance",
+    "ic": "#E67E22",
+    "priority": "High"
+  }
+];
+
+
+const trails = [
+  {
+    "category": "Red River Cart Trails",
+    "name": "The Carlton Trail (Main Route)",
+    "desc": "The primary overland route from Red River to the Saskatchewan country, covering approximately 1,000 km. Used by Metis freighting brigades from the 1820s to the 1880s.",
+    "year": "1830s-1880s",
+    "color": "#E94560",
+    "dash": "8, 6",
+    "weight": 3,
+    "coords": [
+      [
+        49.82,
+        -97.11
+      ],
+      [
+        49.89,
+        -97.14
+      ],
+      [
+        49.92,
+        -97.55
+      ],
+      [
+        49.72,
+        -97.03
+      ],
+      [
+        50.0,
+        -98.0
+      ],
+      [
+        49.96,
+        -98.31
+      ],
+      [
+        50.0,
+        -98.8
+      ],
+      [
+        49.94,
+        -99.64
+      ],
+      [
+        50.25,
+        -99.85
+      ],
+      [
+        50.45,
+        -100.13
+      ],
+      [
+        50.59,
+        -99.28
+      ],
+      [
+        50.5,
+        -100.06
+      ],
+      [
+        50.6,
+        -100.42
+      ],
+      [
+        50.96,
+        -100.14
+      ],
+      [
+        51.06,
+        -101.87
+      ],
+      [
+        51.3,
+        -103.27
+      ],
+      [
+        51.5,
+        -105.03
+      ],
+      [
+        51.92,
+        -104.62
+      ],
+      [
+        52.39,
+        -105.84
+      ],
+      [
+        52.55,
+        -106.14
+      ],
+      [
+        52.75,
+        -106.11
+      ],
+      [
+        52.85,
+        -106.1
+      ],
+      [
+        53.1,
+        -106.17
+      ],
+      [
+        53.54,
+        -106.7
+      ],
+      [
+        53.8,
+        -106.5
+      ],
+      [
+        53.9,
+        -106.4
+      ],
+      [
+        53.7,
+        -106.1
+      ],
+      [
+        52.34,
+        -106.59
+      ]
+    ]
+  },
+  {
+    "category": "Red River Cart Trails",
+    "name": "The Pembina-Red River Cart Trail",
+    "desc": "Connected the Metis settlement at Pembina (Dakota Territory) with the Red River Colony. Used by freighting brigades carrying buffalo hides, pemmican, and trade goods.",
+    "year": "1800s-1870s",
+    "color": "#E94560",
+    "dash": "8, 6",
+    "weight": 3,
+    "coords": [
+      [
+        48.97,
+        -97.24
+      ],
+      [
+        49.0,
+        -97.1
+      ],
+      [
+        49.25,
+        -97.33
+      ],
+      [
+        49.68,
+        -97.15
+      ],
+      [
+        49.89,
+        -97.2
+      ]
+    ]
+  },
+  {
+    "category": "Red River Cart Trails",
+    "name": "The Cypress Hills Wintering Trail",
+    "desc": "The wintering route for Metis buffalo hunters traveling from Red River to the Cypress Hills. This trail carried brigades southwest into the rich buffalo country of what is now southwestern Saskatchewan and southeastern Alberta.",
+    "year": "1830s-1879",
+    "color": "#E94560",
+    "dash": "8, 6",
+    "weight": 3,
+    "coords": [
+      [
+        49.92,
+        -97.55
+      ],
+      [
+        50.0,
+        -98.0
+      ],
+      [
+        49.96,
+        -98.31
+      ],
+      [
+        50.2,
+        -99.8
+      ],
+      [
+        50.3,
+        -101.27
+      ],
+      [
+        49.8,
+        -101.25
+      ],
+      [
+        49.82,
+        -102.5
+      ],
+      [
+        49.63,
+        -105.03
+      ],
+      [
+        49.63,
+        -109.5
+      ]
+    ]
+  },
+  {
+    "category": "Red River Cart Trails",
+    "name": "The Souris River Valley Trail",
+    "desc": "A major freighting route along the Souris (Mouse) River, connecting Brandon House and Fort Ellice with trading posts across the southern prairies. Used by Metis hunters for access to the rich buffalo grounds of the Turtle Mountain region.",
+    "year": "1790s-1870s",
+    "color": "#E94560",
+    "dash": "8, 6",
+    "weight": 3,
+    "coords": [
+      [
+        49.7,
+        -99.64
+      ],
+      [
+        49.67,
+        -99.58
+      ],
+      [
+        49.46,
+        -100.42
+      ],
+      [
+        49.13,
+        -100.42
+      ],
+      [
+        49.0,
+        -100.36
+      ],
+      [
+        49.2,
+        -99.2
+      ],
+      [
+        50.25,
+        -100.78
+      ],
+      [
+        50.4,
+        -101.3
+      ]
+    ]
+  },
+  {
+    "category": "York Boat Routes",
+    "name": "The Nelson River Route to York Factory",
+    "desc": "The most critical water highway of the HBC. York boats carried furs from the interior to York Factory on Hudson Bay for annual shipment to London, returning with trade goods, provisions, and supplies. This route was the economic lifeline of Rupert's Land.",
+    "year": "1817-1890s",
+    "color": "#2196F3",
+    "dash": "12, 6",
+    "weight": 3,
+    "coords": [
+      [
+        53.98,
+        -97.81
+      ],
+      [
+        54.0,
+        -97.28
+      ],
+      [
+        54.5,
+        -96.82
+      ],
+      [
+        54.92,
+        -95.28
+      ],
+      [
+        55.32,
+        -97.69
+      ],
+      [
+        54.91,
+        -98.52
+      ],
+      [
+        55.17,
+        -94.75
+      ],
+      [
+        56.0,
+        -93.0
+      ],
+      [
+        56.7,
+        -92.6
+      ],
+      [
+        57.0,
+        -92.3
+      ]
+    ]
+  },
+  {
+    "category": "York Boat Routes",
+    "name": "The Saskatchewan River Route",
+    "desc": "Connect Red River to the Saskatchewan River system via Lake Winnipeg and the Nelson River. This route connected the Red River settlements to Cumberland House, the HBC's inland headquarters, and beyond to the Athabasca country.",
+    "year": "1774-1880s",
+    "color": "#2196F3",
+    "dash": "12, 6",
+    "weight": 3,
+    "coords": [
+      [
+        49.89,
+        -97.14
+      ],
+      [
+        50.36,
+        -96.93
+      ],
+      [
+        50.6,
+        -96.95
+      ],
+      [
+        50.8,
+        -96.8
+      ]
+    ]
+  }
+];
+
+
+// Layer definitions
+const LC = {
+    'Forts & Trading Posts': '#FF9800',
+    'Communities & Settlements': '#4CAF50',
+    'Parishes & Missions': '#9C27B0',
+    'Road Allowance Communities': '#FF5722',
+    'Wintering Grounds & Camps': '#2196F3',
+    'Battles & Resistance': '#F44336',
+    'Destroyed Communities': '#9E9E9E',
+    'Resource & Harvesting Sites': '#8BC34A',
+    'Governance & Rights': '#FFC107',
+    'Transportation Routes': '#00BCD4',
+};
+
+
+
+// ===== Map init =====
+const map = L.map('map', {center:[52.0, -99.0], zoom:5, minZoom:4, maxZoom:13, zoomControl:false});
+L.control.zoom({position:'topright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom:19, subdomains:'abcd'
+}).addTo(map);
+
+// ===== Layer groups =====
+const LG = {};
+Object.keys(LC).forEach(function(l) {
+    LG[l] = L.layerGroup();
+});
+
+// ===== Location markers =====
+locations.forEach(function(loc) {
+    var color = LC[loc.layer] || '#4CAF50';
+    var r = loc.priority === 'High' ? 8 : 5.5;
+    var m = L.circleMarker([loc.lat, loc.lng], {
+        radius: r, fillColor: color, color: '#fff', weight: 1,
+        opacity: 0.85, fillOpacity: 0.75
+    });
+    m.bindPopup(
+        '<div style="color:#1a1714">' +
+        '<b>' + loc.name + '</b><br>' +
+        '<small>' + loc.type + '</small> | <small>' + loc.founded + '</small><br>' +
+        '<small>' + loc.lat.toFixed(4) + ', ' + loc.lng.toFixed(4) + '</small>' +
+        '<hr style="margin:6px 0;border:none;border-top:1px solid #ddd">' +
+        '<p style="font-size:0.85em;line-height:1.4">' + loc.desc + '</p>' +
+        '</div>'
+    );
+    LG[loc.layer].addLayer(m);
+    LG[loc.layer].addTo(map);
+});
+
+// ===== Trail lines =====
+const TG = L.layerGroup().addTo(map);
+trails.forEach(function(t) {
+    var line = L.polyline(t.coords, {
+        color: t.color, weight: t.weight,
+        dashArray: t.dash, opacity: 0.8
+    });
+    line.bindPopup(
+        '<div style="color:#1a1714">' +
+        '<b>' + t.name + '</b><br>' +
+        '<span style="background:#eee;padding:2px 6px;border-radius:3px;font-size:0.75em">' + t.category + '</span> ' +
+        '<span style="background:#eee;padding:2px 6px;border-radius:3px;font-size:0.75em">' + t.year + '</span><br><br>' +
+        t.desc +
+        '</div>'
+    );
+    TG.addLayer(line);
+});
+
+// ===== Build sidebar =====
+var ld = document.getElementById('layers');
+Object.keys(LC).forEach(function(name) {
+    if (!LG[name]) return;
+    var cnt = LG[name].getLayers().length;
+    if (cnt === 0) return;
+    var color = LC[name];
+    var d = document.createElement('div');
+    d.className = 'lbtn on';
+    d.innerHTML = '<span class="ldot on" style="background:' + color + '"></span>' + name + '<span class="lcnt">' + cnt + '</span>';
+    (function(btn, grp) {
+        d.addEventListener('click', function() {
+            if (map.hasLayer(grp)) {
+                map.removeLayer(grp);
+                btn.classList.remove('on');
+            } else {
+                map.addLayer(grp);
+                btn.classList.add('on');
+            }
+            updCount();
+        });
+    })(d, LG[name]);
+    ld.appendChild(d);
+});
+
+// Transport toggle
+var tdb = document.createElement('div');
+tdb.className = 'lbtn on';
+tdb.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span><span class="ldot on" style="background:#4da8da;margin-left:-4px"></span>Cart Trails &amp; Boat Routes<span class="lcnt">' + trails.length + '</span>';
+tdb.addEventListener('click', function() {
+    if (map.hasLayer(TG)) {
+        map.removeLayer(TG);
+        tdb.classList.remove('on');
+    } else {
+        map.addLayer(TG);
+        tdb.classList.add('on');
+    }
+    updCount();
+});
+ld.appendChild(tdb);
+
+// ===== Stats =====
+function updCount() {
+    var c = 0;
+    locations.forEach(function(loc) {
+        if (map.hasLayer(LG[loc.layer])) c++;
+    });
+    document.getElementById('vc').textContent = c;
+}
+updCount();
+document.getElementById('sub').textContent = locations.length + ' locations &amp; ' + trails.length + ' historic routes';
+
+// ===== Search =====
+document.getElementById('search').addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+    if (!q) return;
+    var match = locations.find(function(loc) { return loc.name.toLowerCase().includes(q); });
+    if (match) {
+        map.setView([match.lat, match.lng], Math.max(map.getZoom(), 10));
+        LG[match.layer].eachLayer(function(m) {
+            if (m.getLatLng && Math.abs(m.getLatLng().lat - match.lat) < 0.0001) m.openPopup();
+        });
+    }
+});
+</script>
+</body>
+</html>
