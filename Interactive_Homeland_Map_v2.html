@@ -5884,9 +5884,21 @@ trails.forEach(function(t) {
 });
 
 // Cart Trails toggle
+var trailDiv = document.createElement('div');
+trailDiv.className = 'lbtn';
+trailDiv.style.cursor = 'default';
+trailDiv.style.color = 'var(--t3)';
+trailDiv.style.fontSize = '.7rem';
+trailDiv.style.textTransform = 'uppercase';
+trailDiv.style.letterSpacing = '.06em';
+trailDiv.style.fontWeight = '600';
+trailDiv.style.padding = 'var(--sm) var(--md)';
+trailDiv.textContent = 'Transport Routes';
+ld.appendChild(trailDiv);
+
 var cartBtn = document.createElement('div');
 cartBtn.className = 'lbtn on';
-cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span>Red River Cart Trails<span class="lcnt">' + cartCount + '</span>';
+cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span><span style="margin-top:2px">Red River Cart Trails</span><span class="lcnt">' + cartCount + '</span>';
 cartBtn.addEventListener('click', function() {
     if (map.hasLayer(cartTG)) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
     else { map.addLayer(cartTG); cartBtn.classList.add('on'); }
