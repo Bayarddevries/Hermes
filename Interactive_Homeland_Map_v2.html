@@ -34,11 +34,21 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .h-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
 
 /* Sidebar */
-.sidebar{position:fixed;top:68px;left:var(--md);z-index:1000;width:260px;max-height:calc(100vh - 84px);background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r3);box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column}
-.sb-head{padding:var(--md);background:var(--bg3);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);border-bottom:1px solid var(--brd)}
+.sidebar{position:fixed;top:68px;left:var(--md);z-index:1000;width:260px;max-height:calc(100vh - 84px);background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r3);box-shadow:0 8px 32px rgba(0,0,0,.5);overflow:hidden;display:flex;flex-direction:column;transition:all .25s cubic-bezier(.4,0,.2,1)}
+.sidebar.closed{transform:translateX(calc(-100% - var(--md)));opacity:0;pointer-events:none}
+.sb-head{padding:var(--md);background:var(--bg3);font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--t2);border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
 .sb-body{overflow-y:auto;padding:var(--xs) 0}
 .sb-body::-webkit-scrollbar{width:4px}
 .sb-body::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:var(--r1)}
+
+/* Sidebar toggle button */
+.sb-tog{position:fixed;top:72px;left:var(--md);z-index:999;width:40px;height:40px;border-radius:var(--r2);background:var(--bg2);border:1px solid var(--brd);box-shadow:var(--sh2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--t1);transition:all .25s cubic-bezier(.4,0,.2,1)}
+.sb-tog:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sb-tog.open{left:calc(260px + var(--md));opacity:0;pointer-events:none;transform:scale(.95)}
+
+/* Close button in sidebar header */
+.sb-x{background:none;border:none;color:var(--t3);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;transition:color .15s}
+.sb-x:hover{color:var(--accent)}
 
 /* Layer buttons */
 .lbtn{display:flex;align-items:center;gap:var(--sm);padding:var(--sm) var(--md);cursor:pointer;font-size:.8rem;color:var(--t1);transition:background .15s;user-select:none;border-bottom:1px solid var(--brd)}
@@ -62,6 +72,37 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .leaflet-control-zoom a:hover{background:var(--accent3)!important;color:var(--t1)!important}
 .leaflet-control-attribution{background:var(--bgov)!important;color:var(--t3)!important;font-size:.65rem!important}
 .leaflet-control-attribution a{color:var(--accent)!important}
+
+/* ===== TIMELINE ===== */
+.timeline{
+  position:fixed;bottom:0;left:0;right:0;z-index:1000;
+  background:var(--bgov);backdrop-filter:blur(12px);
+  padding:var(--xs) var(--lg) var(--sm);
+  border-top:1px solid var(--brd);
+}
+.tl-head{display:flex;align-items:center;justify-content:space-between}
+.tl-title{font-size:.7rem;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.tl-year{font-size:.95rem;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+.tl-count{font-size:.7rem;color:var(--t2)}
+.tl-slider{
+  width:100%;height:4px;margin:var(--xs) 0;
+  -webkit-appearance:none;appearance:none;
+  background:linear-gradient(to right,var(--brd) 0%,var(--bg3) 100%);
+  border-radius:2px;outline:none;cursor:pointer;
+}
+.tl-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 3px var(--bg),0 0 0 4px var(--accent-glow),0 2px 6px rgba(0,0,0,.4);
+  cursor:pointer;
+}
+.tl-slider::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:var(--accent);
+  border:3px solid var(--bg);box-shadow:0 0 0 4px var(--accent-glow);
+  cursor:pointer;
+}
+.tl-labels{display:flex;justify-content:space-between;padding:0 2px}
+.tl-labels span{font-size:.6rem;color:var(--t3)}
 
 /* ===== POPUPS ===== */
 .leaflet-popup-content-wrapper{
@@ -163,6 +204,101 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 }
 .priority-badge.high{background:rgba(244,67,54,.15);color:#f44336}
 .priority-badge.medium{background:rgba(170,170,170,.12);color:#888}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  /* Header: stack vertical */
+  .header{height:auto;padding:var(--xs) var(--sm);flex-wrap:wrap;gap:var(--xs)}
+  .h-brand{flex:1;min-width:0}
+  .h-title{font-size:.85rem}
+  .h-sub{font-size:.65rem}
+  .h-actions{width:100%;justify-content:space-between}
+  .h-search{flex:1;min-width:0;width:auto}
+  
+  /* Sidebar: full-width sheet from left */
+  .sidebar{top:60px;left:0;width:calc(100vw - 16px);max-height:65vh;border-radius:0 0 var(--r3) var(--r3);transform:translateX(-100%)}
+  .sidebar.closed{transform:translateX(-100%);opacity:1;pointer-events:auto}
+  .sidebar:not(.closed){transform:translateX(0);opacity:1}
+  
+  /* Toggle button position */
+  .sb-tog{top:64px;left:var(--sm)}
+  .sb-tog.open{left:var(--sm);opacity:0;pointer-events:none;transform:translateX(calc(100vw - 48px))}
+  
+  /* Timeline: compact on mobile */
+  .timeline{padding:var(--xs) var(--sm) var(--xs)}
+  .tl-head{flex-wrap:wrap;gap:0 var(--sm)}
+  .tl-title{font-size:.6rem}
+  .tl-year{font-size:.85rem}
+  .tl-count{font-size:.6rem}
+  .tl-slider{height:6px;-webkit-tap-highlight-color:transparent}
+  .tl-slider::-webkit-slider-thumb{width:24px;height:24px}
+  .tl-slider::-moz-range-thumb{width:24px;height:24px}
+  .tl-labels{display:none}
+  
+  /* Legend: hide on mobile, reposition */
+  .legend{bottom:80px;right:var(--sm);left:var(--sm);max-width:none;padding:var(--sm)}
+  
+  /* Zoom controls: small */
+  .leaflet-control-zoom a{width:36px!important;height:36px!important;font-size:20px!important}
+  .leaflet-control-zoom{bottom:var(--sm)!important;top:auto!important;right:var(--sm)!important;left:auto!important}
+  
+  /* Popup: narrow on mobile */
+  .leaflet-popup-content-wrapper{max-width:calc(100vw - 32px)!important}
+  .leaflet-popup-content{width:calc(100vw - 44px)!important;max-width:300px}
+  .pop-title h3{font-size:.85rem}
+  .pop-desc{max-height:120px;font-size:.78rem}
+  .detail-label{min-width:50px}
+}
+
+@media(max-width:480px){
+  .header{padding:var(--xs) var(--sm)}
+  .h-title{font-size:.78rem}
+  .h-sub{display:none}
+  .stat{padding:var(--xs) var(--sm);font-size:.65rem}
+  .sidebar{max-height:70vh}
+  .tl-year{font-size:.78rem}
+}
+
+@media(min-width:1200px){
+  .sidebar{width:280px}
+}
+
+/* ===== POLISH ===== */
+/* Smooth entry animation */
+.sidebar{animation:slideIn .3s .2s both}
+.sidebar.closed{animation:none;transform:translateX(calc(-100% - var(--md)));opacity:0;pointer-events:auto}
+.legend{animation:fadeUp .4s .3s both}
+.timeline{animation:fadeUp .3s .4s both}
+@keyframes slideIn{from{transform:translateX(calc(-100% - var(--md)));opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Polished scrollbar for timeline labels */
+.tl-labels{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;gap:var(--xs)}
+.tl-labels::-webkit-scrollbar{display:none}
+
+/* Active timeline label */
+.tl-labels{position:relative}
+.tl-labels .tl-active{color:var(--accent)!important;font-weight:700}
+
+/* Smooth popup open */
+.leaflet-popup{animation:popIn .2s both}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+
+/* Map loading overlay */
+.map-loader{
+  position:fixed;inset:0;z-index:2000;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:var(--md);
+  transition:opacity .5s,visibility .5s;
+}
+.map-loader.done{opacity:0;visibility:hidden;pointer-events:none}
+.loader-ring{
+  width:40px;height:40px;border:3px solid var(--brd);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:.8rem;color:var(--t2)}
 </style>
 </head>
 <body>
@@ -179,9 +315,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 </header>
 
 <aside class="sidebar">
-  <div class="sb-head">Map Layers</div>
+  <div class="sb-head">Map Layers <button class="sb-x" id="sb-x" title="Close sidebar">&times;</button></div>
   <div class="sb-body" id="layers"></div>
 </aside>
+
+<button class="sb-tog" id="sb-tog" title="Open filters">&#9776;</button>
 
 <div class="legend">
   <div class="leg-title">Transport Routes</div>
@@ -189,7 +327,26 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
   <div class="leg-row"><div class="leg-line" style="background:#4da8da"></div>York Boat Routes</div>
 </div>
 
+<!-- Timeline filter -->
+<div class="timeline">
+  <div class="tl-head">
+    <span class="tl-title">Timeline Filter</span>
+    <span class="tl-year" id="tl-year">All Eras</span>
+    <span class="tl-count" id="tl-count"></span>
+  </div>
+  <input type="range" class="tl-slider" id="tl-slider" min="0" max="12" value="0" step="1"/>
+  <div class="tl-labels">
+    <span>1680</span><span>1720</span><span>1760</span><span>1800</span><span>1820</span><span>1840</span><span>1860</span><span>1870</span><span>1880</span><span>1890</span><span>1900</span><span>1950</span><span>All</span>
+  </div>
+</div>
+
 <div id="map"></div>
+
+<!-- Loading overlay -->
+<div class="map-loader" id="map-loader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Loading Metis Homeland...</div>
+</div>
 
 <script>
 const locations = [
@@ -5766,6 +5923,154 @@ document.getElementById('search').addEventListener('input', function() {
             if (m.getLatLng && Math.abs(m.getLatLng().lat - match.lat) < 0.0001) m.openPopup();
         });
     }
+});
+
+// ===== TIMELINE FILTER =====
+// Era breakpoints matching the slider labels
+var eras = [0, 1680, 1720, 1760, 1800, 1820, 1840, 1860, 1870, 1880, 1890, 1900, 1950, 9999];
+
+function parseFirstYear(text) {
+    if (!text) return 9999;
+    var m = text.match(/(\d{4})/);
+    return m ? parseInt(m[1]) : 9999;
+}
+
+function applyTimeline() {
+    var idx = parseInt(document.getElementById('tl-slider').value);
+    var cutoff = eras[idx];
+    
+    // Show "All Eras" when at max
+    document.getElementById('tl-year').textContent = idx === 0 ? 'All Eras' : 
+                                                    idx >= eras.length - 1 ? 'All Eras' :
+                                                    idx < eras.length - 1 ? 'Up to ' + cutoff : 'All Eras';
+    
+    // Filter location markers
+    var visibleCount = 0;
+    locations.forEach(function(loc) {
+        var year = parseFirstYear(loc.founded);
+        var m = null;
+        // Find the marker for this location in its layer group
+        LG[loc.layer].eachLayer(function(mkr) {
+            if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.0001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.0001) {
+                m = mkr;
+            }
+        });
+        if (m) {
+            if (idx === 0 || year <= cutoff) {
+                if (!LG[loc.layer].hasLayer(m)) LG[loc.layer].addLayer(m);
+                visibleCount++;
+            } else {
+                if (LG[loc.layer].hasLayer(m)) LG[loc.layer].removeLayer(m);
+            }
+        }
+    });
+    
+    // Filter trails
+    var yearLabel = idx === 0 ? 'All Eras' : 'Up to ' + cutoff;
+    var trailCount = 0;
+    trails.forEach(function(t, ti) {
+        var startYear = parseFirstYear(t.year);
+        var line = (t.category === 'Red River Cart Trails' ? cartTG : boatTG).getLayers()[ti] ||
+                   (t.category === 'Red River Cart Trails' ? 
+                    cartTG.getLayers().find(function(l) { return l.options && l._popup && l._popup.getContent() && l._popup.getContent().indexOf(t.name) > -1; }) :
+                    boatTG.getLayers().find(function(l) { return l._popup && l._popup.getContent().indexOf(t.name) > -1; }));
+    });
+    
+    // Simpler trail filtering - rebuild trail groups
+    cartTG.clearLayers();
+    boatTG.clearLayers();
+    var cartNum = 0, boatNum = 0;
+    trails.forEach(function(t) {
+        var startYear = parseFirstYear(t.year);
+        if (idx === 0 || startYear <= cutoff) {
+            var grp = t.category === 'Red River Cart Trails' ? cartTG : boatTG;
+            var line = L.polyline(t.coords, {
+                color: t.color, weight: t.weight,
+                dashArray: t.dash, opacity: 0.82,
+                lineCap: 'round', lineJoin: 'round'
+            });
+            line.bindPopup(
+                '<div class="loc-popup">' +
+                '<div class="pop-header">' +
+                    '<div class="pop-accent" style="background:' + t.color + '"></div>' +
+                    '<div class="pop-title">' +
+                        '<h3>' + t.name + '</h3>' +
+                        '<span class="pop-type" style="background:' + t.color + '">' + t.category + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="pop-desc">' + t.desc + '</div>' +
+                '</div>'
+            );
+            line.bindTooltip(t.name, {
+                sticky: true, direction: 'top',
+                className: 'trail-tooltip',
+                offset: [0, -4]
+            });
+            grp.addLayer(line);
+            if (t.category === 'Red River Cart Trails') cartNum++; else boatNum++;
+        }
+    });
+    
+    // Update sidebar counts
+    document.querySelectorAll('.lbtn').forEach(function(btn) {
+        // Rebuild sidebar would need full refresh - for now just update visible count
+    });
+
+    // Adjust legend offset for timeline
+    document.querySelector('.legend').style.bottom = '90px';
+    
+    // Update count display
+    document.getElementById('tl-count').textContent = visibleCount + ' locations';
+    document.getElementById('vc').textContent = visibleCount;
+}
+
+document.getElementById('tl-slider').addEventListener('input', function() {
+    applyTimeline();
+    // Update sidebar trail counts
+    cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
+    boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
+});
+
+// Legend offset for timeline bar
+document.querySelector('.legend').style.bottom = '90px';
+
+// ===== FINAL POLISH =====
+// Hide loading overlay once map is ready
+window.addEventListener('load', function() {
+    var loader = document.getElementById('map-loader');
+    if (loader) setTimeout(function() { loader.classList.add('done'); }, 400);
+});
+
+// Highlight active timeline label
+var tlLabels = document.querySelector('.tl-labels');
+if (tlLabels) {
+    var spans = tlLabels.querySelectorAll('span');
+    var slider = document.getElementById('tl-slider');
+    
+    function updateActiveLabel() {
+        var idx = parseInt(slider.value);
+        spans.forEach(function(s, i) {
+            s.className = (i === idx + 1) ? 'tl-active' : '';
+        });
+    }
+    
+    slider.addEventListener('input', updateActiveLabel);
+    updateActiveLabel();
+}
+
+// ===== SIDEBAR TOGGLE =====
+var sidebar = document.querySelector('.sidebar');
+var sbTog = document.getElementById('sb-tog');
+var sbX = document.getElementById('sb-x');
+
+sbX.addEventListener('click', function() {
+    sidebar.classList.add('closed');
+    sbTog.classList.remove('open');
+});
+
+sbTog.addEventListener('click', function() {
+    sidebar.classList.remove('closed');
+    sbTog.classList.add('open');
 });
 </script>
 </body>
