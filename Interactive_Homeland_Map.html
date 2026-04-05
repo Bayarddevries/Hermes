@@ -80,36 +80,94 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;bac
 
 /* ===== MOBILE ===== */
 @media(max-width:768px){
-  #menuBtn{left:56px}
-  .sidebar{left:0;width:100%;max-width:none;max-height:calc(100vh - 55px);border-radius:0 10px 10px 0}
-  .trails-panel{right:0;max-width:none;width:calc(100% - 12px);border-radius:10px}
-  .popup-container{max-width:280px;font-size:12px;max-height:40vh}
-  .popup-container h2{font-size:14px}
+  /* Buttons: compact, left edge + right edge */
+  #menuBtn{left:10px;top:10px;width:44px;height:44px;font-size:22px}
+  #trailBtn{right:10px;top:10px;width:44px;height:44px;font-size:22px}
+  
+  /* Sidebar: slide-in overlay, max 85% width, max 80% height */
+  .sidebar{
+    left:0;top:0;width:85vw;max-width:340px;
+    max-height:80vh;border-radius:0 12px 12px 0;
+    transform:translateX(-110%);opacity:0;pointer-events:none;
+    padding:14px;
+    transition:transform .3s ease,opacity .3s ease;
+  }
+  .sidebar.open{transform:translateX(0);opacity:1;pointer-events:auto}
+  .sidebar h2{font-size:15px;margin-bottom:8px;padding-bottom:6px}
+  
+  /* Search: prevent iOS zoom */
+  .sidebar input[type=text]{font-size:16px;padding:8px;margin-bottom:8px}
+  
+  /* Layer groups: compact headers */
+  .layer-group-header{font-size:12px;padding:6px 4px}
+  .layer-group-items{padding:1px 0 1px 6px}
+  
+  /* Labels: larger touch targets */
+  .sidebar label,.trails-panel label{padding:8px 10px;min-height:42px;font-size:13px}
+  .sidebar input[type=checkbox],.trails-panel input[type=checkbox]{width:22px;height:22px}
+  
+  /* Trails panel: slide from right, narrower */
+  .trails-panel{right:0;top:0;width:85vw;max-width:300px;max-height:80vh;border-radius:12px 0 0 12px}
+  .trails-panel.collapsed{transform:translateX(110%)}
+  
+  /* Legend: hide on tablet+ to save map space */
+  .legend{display:none}
+  
+  /* Popups */
+  .popup-container{max-width:260px;font-size:12px;max-height:45vh}
+  .popup-container h2{font-size:13px}
   .popup-container .section-text{font-size:11px}
   .popup-container .badge{font-size:8px;padding:2px 6px}
-  .legend{max-width:160px;font-size:10px;padding:8px}
-  .legend-dot{width:8px;height:8px}
-  .sidebar label,.trails-panel label{padding:8px 10px;min-height:40px}
-  .sidebar input[type=checkbox],.trails-panel input[type=checkbox]{width:22px;height:22px}
 }
 
+/* Small phones */
 @media(max-width:480px){
-  #menuBtn{left:50px;width:44px;height:44px;font-size:20px}
-  #trailBtn{width:44px;height:44px;font-size:20px}
-  .sidebar{padding:12px}
-  .sidebar h2{font-size:15px}
-  .sidebar input[type=text]{font-size:16px}
-  .trails-panel{padding:10px}
-  .popup-container{max-width:260px;font-size:11px}
-  .popup-container .section-label{font-size:9px}
-  .legend{display:none}
+  #menuBtn{width:40px;height:40px;font-size:18px;left:8px;top:8px}
+  #trailBtn{width:40px;height:40px;font-size:18px;right:8px;top:8px}
+  
+  .sidebar{
+    width:90vw;max-width:280px;max-height:75vh;
+    padding:10px;border-radius:0 10px 10px 0;
+  }
+  .sidebar.open{transform:translateX(0);opacity:1;pointer-events:auto}
+  .sidebar h2{font-size:14px;margin-bottom:6px;padding-bottom:5px}
+  .sidebar input[type=text]{font-size:16px;padding:7px;margin-bottom:6px}
+  .stats{font-size:11px;padding:6px;margin-bottom:8px}
+  
+  /* Collapsed layer groups by default */
+  .layer-group-header{font-size:11px;padding:5px 3px}
+  .layer-group-items{padding:0 0 0 5px}
+  .layer-group-header .group-icon{font-size:9px;width:12px}
+  
+  /* Labels: slightly more compact */
+  .sidebar label,.trails-panel label{padding:7px 8px;min-height:38px;font-size:12px}
+  .sidebar input[type=checkbox],.trails-panel input[type=checkbox]{width:20px;height:20px}
+  
+  /* Trails panel */
+  .trails-panel{
+    width:90vw;max-width:260px;max-height:75vh;
+    padding:10px;
+    border-radius:10px 0 0 10px;
+  }
+  .trails-panel h4{font-size:12px;margin-bottom:6px;padding-bottom:4px}
+  .trails-panel .section-label{font-size:9px;padding:2px 4px;margin:6px 0 2px}
+  .trails-panel label{padding:5px 4px;min-height:34px;font-size:11px}
+  .btn-row button{font-size:9px;padding:4px 3px;min-height:28px}
+  
+  /* Year slider */
+  .slider-container{padding:6px;margin-top:8px}
+  .year-display{font-size:18px;margin-bottom:3px}
+  .slider-container>label{font-size:11px;margin-bottom:2px}
+  
+  /* Popups */
+  .popup-container{max-width:240px;font-size:11px;max-height:40vh;padding:6px}
 }
 </style>
 </head>
 <body>
 <div id="map"></div>
-<button id="menuBtn" onclick="toggleSidebar()" title="Map layers">&#9776;</button>
-<button id="trailBtn" onclick="toggleTrailsPanel()" title="Trails">&#128506;</button>
+<button id="menuBtn" onclick="toggleSidebar()" title="Toggle layers">&#9776;</button>
+<button id="trailBtn" onclick="toggleTrailsPanel()" title="Toggle trails">&#x1F5FA;</button>
 
 
 <div class="sidebar">
@@ -390,9 +448,54 @@ buildSB();
 Object.values(ML).forEach(function(a){ a.forEach(function(m){ map.addLayer(m) }) });
 Object.values(TL).forEach(function(a){ a.forEach(function(t){ map.addLayer(t) }) });
 
+// Device-aware init
+var isMobile = window.innerWidth <= 768;
+if(isMobile){
+  // Hide sidebar on mobile until user taps menu button
+  var sb = document.querySelector('.sidebar');
+  sb.classList.add('collapsed');
+  sb.classList.remove('open');
+  // Collapse all layer groups to reduce clutter
+  document.querySelectorAll('.layer-group-items').forEach(function(el){
+    el.style.display = 'none';
+  });
+  document.querySelectorAll('.group-icon').forEach(function(el){
+    el.innerHTML = '&#9654;'; // right arrow = collapsed
+  });
+  // Right-pointing arrow on collapsed groups for mobile
+  document.querySelectorAll('.group-icon').forEach(function(el){
+    el.innerHTML = '&#9654;';
+  });
+}
+
+// Resize handler: adapt sidebar behavior to device size
+window.addEventListener('resize', function(){
+  var w = window.innerWidth;
+  var sb = document.querySelector('.sidebar');
+  if(w <= 768){
+    if(!sb.classList.contains('collapsed') && !sb.classList.contains('open')){
+      sb.classList.add('collapsed');
+    }
+  } else {
+    sb.classList.remove('open');
+  }
+});
+
 </script>
 <script>
-function toggleSidebar(){document.querySelector('.sidebar').classList.toggle('collapsed')}
+function toggleSidebar(){
+  var sb=document.querySelector('.sidebar');
+  if(window.innerWidth<=768){
+    // Mobile: sidebar starts hidden, toggle 'open'
+    sb.classList.toggle('open');
+    // Also remove collapsed so it doesn't interfere
+    sb.classList.remove('collapsed');
+  } else {
+    // Desktop: sidebar starts visible, toggle 'collapsed'
+    sb.classList.toggle('collapsed');
+    sb.classList.remove('open');
+  }
+}
 function toggleTrailsPanel(){document.querySelector('.trails-panel').classList.toggle('collapsed')}
 function setAllTrails(on){document.querySelectorAll('.trails-panel input[type=checkbox]').forEach(function(c){c.checked=on;var idx=parseInt(c.id.split('-')[1]);var ln=window['t'+idx];if(ln)ln.setStyle({opacity:on?0.85:0})})}
 
