@@ -126,11 +126,31 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 /* Description */
 .pop-desc{
   padding:var(--sm) var(--md);
-  font-size:.82rem;color:var(--t2);line-height:1.5;
-  max-height:160px;overflow-y:auto;
+  font-size:.82rem;color:var(--t2);line-height:1.55;
+  max-height:200px;overflow-y:auto;
+  border-top:1px solid var(--brd);
 }
 .pop-desc::-webkit-scrollbar{width:3px}
 .pop-desc::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
+
+/* Detail rows */
+.pop-details{
+  border-top:1px solid var(--brd);
+  padding:var(--xs) var(--md);
+}
+.detail-row{
+  display:flex;align-items:baseline;gap:var(--sm);
+  padding:var(--xs) var(--sm);
+  font-size:.78rem;
+}
+.detail-row:nth-child(even){background:rgba(255,255,255,.02);border-radius:4px}
+.detail-label{
+  color:var(--t3);font-size:.68rem;text-transform:uppercase;
+  letter-spacing:.05em;font-weight:600;min-width:60px;
+}
+.detail-value{
+  color:var(--t1);font-weight:500;flex:1;
+}
 
 /* Footer */
 .pop-footer{
@@ -5611,7 +5631,7 @@ locations.forEach(function(loc) {
         radius: r, fillColor: color, color: '#fff', weight: 1,
         opacity: 0.85, fillOpacity: 0.75
     });
-    // Location popups - rich themed cards
+    // Location popups - rich themed cards showing ALL data
     var popColor = LC[loc.layer] || '#4CAF50';
     m.bindPopup(
         '<div class="loc-popup">' +
@@ -5623,11 +5643,15 @@ locations.forEach(function(loc) {
             '</div>' +
         '</div>' +
         '<div class="pop-meta">' +
-            '<span class="meta-item"><span class="meta-icon">&#x1F4C5;</span> ' + loc.founded + '</span>' +
+            '<span class="meta-item"><span class="meta-icon">&#x1F4C5;</span> Founded: ' + loc.founded + '</span>' +
             '<span class="meta-item"><span class="meta-icon">&#x1F4CD;</span> ' + loc.lat.toFixed(4) + ', ' + loc.lng.toFixed(4) + '</span>' +
         '</div>' +
+        '<div class="pop-details">' +
+            '<div class="detail-row"><span class="detail-label">Region:</span><span class="detail-value">' + loc.region + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Category:</span><span class="detail-value">' + loc.layer + '</span></div>' +
+            '<div class="detail-row"><span class="detail-label">Priority:</span><span class="detail-value">' + loc.priority + '</span></div>' +
+        '</div>' +
         '<div class="pop-desc">' + loc.desc + '</div>' +
-        '<div class="pop-footer"><span class="priority-badge ' + loc.priority.toLowerCase() + '">' + loc.priority + ' PRIORITY</span></div>' +
         '</div>'
     );
     LG[loc.layer].addLayer(m);
