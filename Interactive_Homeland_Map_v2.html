@@ -5543,25 +5543,7 @@ locations.forEach(function(loc) {
     LG[loc.layer].addTo(map);
 });
 
-// ===== Trail lines =====
-const TG = L.layerGroup().addTo(map);
-trails.forEach(function(t) {
-    var line = L.polyline(t.coords, {
-        color: t.color, weight: t.weight,
-        dashArray: t.dash, opacity: 0.8
-    });
-    line.bindPopup(
-        '<div style="color:#1a1714">' +
-        '<b>' + t.name + '</b><br>' +
-        '<span style="background:#eee;padding:2px 6px;border-radius:3px;font-size:0.75em">' + t.category + '</span> ' +
-        '<span style="background:#eee;padding:2px 6px;border-radius:3px;font-size:0.75em">' + t.year + '</span><br><br>' +
-        t.desc +
-        '</div>'
-    );
-    TG.addLayer(line);
-});
-
-// ===== Build sidebar =====
+// ===== Trail lines + Build sidebar =====
 var ld = document.getElementById('layers');
 Object.keys(LC).forEach(function(name) {
     if (!LG[name]) return;
