@@ -5926,20 +5926,26 @@ document.getElementById('search').addEventListener('input', function() {
 });
 
 // ===== TIMELINE FILTER =====
-// Era breakpoints matching the slider labels
-var eras = [0, 1680, 1720, 1760, 1800, 1820, 1840, 1860, 1870, 1880, 1890, 1900, 1950, 9999];
+// Era cutoffs match slider positions 0-12 (13 labels)
+// 0=1680 (most restrictive) → 11=1950 → 12=All
+var eras = [1680, 1720, 1760, 1800, 1820, 1840, 1860, 1870, 1880, 1890, 1900, 1950, 99999];
+var eraLabels = ['1680','1720','1760','1800','1820','1840','1860','1870','1880','1890','1900','1950','All'];
 
 function parseFirstYear(text) {
-    if (!text) return 9999;
+    if (!text) return 99999;
+    var low = text.toLowerCase();
+    // Ancient, Historic, Oral tradition = very old, always show
+    if (low.indexOf('ancient') > -1 || low.indexOf('historic') > -1 || low.indexOf('oral') > -1 || low.indexOf('traditional') > -1 || low.indexOf('approximate') > -1) return 1;
     var m = text.match(/(\d{4})/);
-    return m ? parseInt(m[1]) : 9999;
+    return m ? parseInt(m[1]) : 99999;
 }
 
 function applyTimeline() {
     var idx = parseInt(document.getElementById('tl-slider').value);
+    var cutoff = eras[idx];
     
-    // At position 0 - "All Eras" - show everything, don't filter
-    if (idx === 0) {
+    // At position 12 (last) - "All" - show everything
+    if (idx === eras.length - 1) {
         document.getElementById('tl-year').textContent = 'All Eras';
         document.getElementById('tl-count').textContent = locations.length + ' locations';
         document.getElementById('vc').textContent = locations.length;
@@ -5968,7 +5974,6 @@ function applyTimeline() {
         return;
     }
     
-    var cutoff = eras[idx];
     document.getElementById('tl-year').textContent = 'Up to ' + cutoff;
     
     // Filter location markers
