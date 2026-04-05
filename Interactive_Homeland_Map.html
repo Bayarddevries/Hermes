@@ -83,6 +83,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     <div class="legend-item"><div class="legend-line" style="background:#2980B9;height:4px"></div>Boat Routes</div>
 </div>
 
+
+<!-- TRAILS -->
+<div class="trails-panel" style="position:absolute;top:10px;right:10px;z-index:1000;background:#fff;padding:15px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-width:280px;max-height:calc(100vh - 40px);overflow-y:auto;font-size:13px">
+<h3 style="font-size:14px;margin:0 0 10px;color:#1a1a1a;border-bottom:2px solid #C0392B;padding-bottom:6px">Historical Trails</h3>
+<div class="trails-section">
+<div class="section-title" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin:8px 0 4px">Cart Trails</div>
+<label><input type="checkbox" id="trail-0" checked> Carlton Trail (Main) (1840s-1880s)</label><br><label><input type="checkbox" id="trail-1" checked> Carlton Trail (Southern Branch) (1840s-1880s)</label><br><label><input type="checkbox" id="trail-2" checked> Red River Cart Trail to Pembina (1820s-1870s)</label><br><label><input type="checkbox" id="trail-3" checked> Cypress Hills Winter Hunting Trail (1840s-1873)</label><br><label><input type="checkbox" id="trail-4" checked> Touchwood Hills Trail (1850s-1880s)</label><br><label><input type="checkbox" id="trail-5" checked> St. Paul / Pembina Trail (1810s-1870s)</label><br><label><input type="checkbox" id="trail-6" checked> Grantown to St. Albert Cart Trail (1860s-1885)</label><br><label><input type="checkbox" id="trail-7" checked> Batoche to Duck Lake Trail (1870s-1885)</label><br><label><input type="checkbox" id="trail-8" checked> Fish Creek / Batoche Battle Trail (1885)</label><br><label><input type="checkbox" id="trail-9" checked> Qu'Appelle Trail (1850s-1880s)</label><br><label><input type="checkbox" id="trail-10" checked> Moose Mountain Trail (1850s-1880s)</label><br><label><input type="checkbox" id="trail-11" checked> Riding Mountain Trail (1840s-1880s)</label><br><label><input type="checkbox" id="trail-12" checked> Turtle Mountain Wintering Trail (1840s-1870s)</label><br><label><input type="checkbox" id="trail-13" checked> Wood Mountain Trail (1870s-1885)</label><br><label><input type="checkbox" id="trail-14" checked> Souris River Cart Trail (1830s-1880s)</label><br><label><input type="checkbox" id="trail-15" checked> Saskatchewan Landing Trail (1850s-1870s)</label><br><label><input type="checkbox" id="trail-16" checked> Battleford Cart Trail (1870s-1885)</label><br><label><input type="checkbox" id="trail-17" checked> Fort Qu'Appelle to Fort Ellice Trail (1840s-1880s)</label><br><label><input type="checkbox" id="trail-18" checked> Pheasant Hills Hunting Trail (1840s-1880s)</label><br><label><input type="checkbox" id="trail-19" checked> St. Boniface to St. Vital Trail (1820s-1880s)</label><br><label><input type="checkbox" id="trail-20" checked> Grand Coteau Winter Hunt Trail (1840s-1870s)</label><br><label><input type="checkbox" id="trail-21" checked> St. Laurent / Batoche River Corridor (1870s-1885)</label><br><label><input type="checkbox" id="trail-22" checked> Metis Winter Village Trail (Batoche) (1870s-1885)</label>
+</div>
+<div class="trails-section">
+<div class="section-title" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#888;margin:8px 0 4px">Boat Routes</div>
+<label><input type="checkbox" id="trail-23" checked> York Factory Express (Red River Route) (1821-1850s)</label><br><label><input type="checkbox" id="trail-24" checked> Nelson River Route (1700s-1800s)</label><br><label><input type="checkbox" id="trail-25" checked> Hayes River Route to York Factory (1700s-1880s)</label><br><label><input type="checkbox" id="trail-26" checked> Saskatchewan River Route (1700s-1885)</label><br><label><input type="checkbox" id="trail-27" checked> Assiniboine River Route (1700s-1870s)</label><br><label><input type="checkbox" id="trail-28" checked> Red River North Route (Lake Winnipeg) (1700s-1885)</label><br><label><input type="checkbox" id="trail-29" checked> Cedar Lake / Cumberland House Route (1700s-1880s)</label><br><label><input type="checkbox" id="trail-30" checked> Rainy River / Lake of the Woods Route (1700s-1850s)</label><br><label><input type="checkbox" id="trail-31" checked> Lake Manitoba Crossing (1800s-1880s)</label><br><label><input type="checkbox" id="trail-32" checked> Winnipegosis Water Route (1800s-1880s)</label><br><label><input type="checkbox" id="trail-33" checked> Sturgeon Lake Route (1830s-1880s)</label><br><label><input type="checkbox" id="trail-34" checked> Churchill River Route (Northern Fur Trade) (1700s-1880s)</label><br><label><input type="checkbox" id="trail-35" checked> Athabasca River Route (1780s-1880s)</label><br><label><input type="checkbox" id="trail-36" checked> Peace River Route (1780s-1880s)</label><br><label><input type="checkbox" id="trail-37" checked> Churchill River Portage Route (1700s-1880s)</label><br><label><input type="checkbox" id="trail-38" checked> La Loche Brigade Route (1820s-1880s)</label>
+</div>
+</div>
 <div class="overlay" id="ov" onclick="this.classList.remove('open')"><span class="close">&times;</span><img id="ovimg" src=""></div>
 
 <script>
@@ -255,6 +268,87 @@ buildSB();
 Object.values(ML).forEach(function(a){ a.forEach(function(m){ map.addLayer(m) }) });
 Object.values(TL).forEach(function(a){ a.forEach(function(t){ map.addLayer(t) }) });
 
+
+<script>
+var t0=L.polyline([[49.888,-97.142],[49.913,-97.542],[49.973,-98.29],[50.071,-96.983],[50.542,-98.112],[51.316,-101.288],[52.755,-106.116],[53.683,-113.214]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-0').addEventListener('change',function(){t0.setStyle({opacity:this.checked?0.85:0})});
+var t1=L.polyline([[50.542,-98.112],[50.418,-99.502],[50.541,-103.878],[50.397,-105.536],[51.316,-101.288],[52.755,-106.116]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-1').addEventListener('change',function(){t1.setStyle({opacity:this.checked?0.85:0})});
+var t2=L.polyline([[49.888,-97.142],[49.819,-97.136],[49.766,-97.147],[49.188,-97.168],[48.967,-97.248]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-2').addEventListener('change',function(){t2.setStyle({opacity:this.checked?0.85:0})});
+var t3=L.polyline([[49.888,-97.142],[49.371,-106.384],[49.549,-109.868]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-3').addEventListener('change',function(){t3.setStyle({opacity:this.checked?0.85:0})});
+var t4=L.polyline([[50.541,-103.878],[50.952,-103.89],[50.397,-105.536]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-4').addEventListener('change',function(){t4.setStyle({opacity:this.checked?0.85:0})});
+var t5=L.polyline([[49.888,-97.142],[49.188,-97.168],[48.967,-97.248],[48.001,-96.602],[45.914,-93.094]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-5').addEventListener('change',function(){t5.setStyle({opacity:this.checked?0.85:0})});
+var t6=L.polyline([[49.9197,-97.5511],[50.071,-96.983],[51.316,-101.288],[52.755,-106.116],[53.633,-113.629]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-6').addEventListener('change',function(){t6.setStyle({opacity:this.checked?0.85:0})});
+var t7=L.polyline([[52.7533,-106.1158],[52.817,-106.283]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-7').addEventListener('change',function(){t7.setStyle({opacity:this.checked?0.85:0})});
+var t8=L.polyline([[52.7533,-106.1158],[52.067,-106.633],[51.983,-106.867]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-8').addEventListener('change',function(){t8.setStyle({opacity:this.checked?0.85:0})});
+var t9=L.polyline([[50.233,-103.783],[50.448,-104.617]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-9').addEventListener('change',function(){t9.setStyle({opacity:this.checked?0.85:0})});
+var t10=L.polyline([[49.233,-102.467],[49.383,-102.317]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-10').addEventListener('change',function(){t10.setStyle({opacity:this.checked?0.85:0})});
+var t11=L.polyline([[50.733,-99.167],[50.967,-99.933]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-11').addEventListener('change',function(){t11.setStyle({opacity:this.checked?0.85:0})});
+var t12=L.polyline([[49.1233,-100.4167],[49.0531,-100.1836],[48.883,-99.933]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-12').addEventListener('change',function(){t12.setStyle({opacity:this.checked?0.85:0})});
+var t13=L.polyline([[49.549,-105.783],[49.783,-105.583]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-13').addEventListener('change',function(){t13.setStyle({opacity:this.checked?0.85:0})});
+var t14=L.polyline([[49.888,-97.142],[49.371,-98.617],[49.4667,-99.3167],[49.4589,-100.4167]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-14').addEventListener('change',function(){t14.setStyle({opacity:this.checked?0.85:0})});
+var t15=L.polyline([[50.541,-106.8],[50.717,-107.583]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-15').addEventListener('change',function(){t15.setStyle({opacity:this.checked?0.85:0})});
+var t16=L.polyline([[52.7533,-106.1158],[52.755,-106.116],[53.203,-105.753],[53.167,-108.55]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-16').addEventListener('change',function(){t16.setStyle({opacity:this.checked?0.85:0})});
+var t17=L.polyline([[50.233,-103.783],[50.117,-101.983],[49.4667,-99.3167]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-17').addEventListener('change',function(){t17.setStyle({opacity:this.checked?0.85:0})});
+var t18=L.polyline([[50.541,-103.878],[50.317,-104.117]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-18').addEventListener('change',function(){t18.setStyle({opacity:this.checked?0.85:0})});
+var t19=L.polyline([[49.888,-97.142],[49.819,-97.136]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-19').addEventListener('change',function(){t19.setStyle({opacity:this.checked?0.85:0})});
+var t20=L.polyline([[49.9197,-97.5511],[48.967,-98.833]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-20').addEventListener('change',function(){t20.setStyle({opacity:this.checked?0.85:0})});
+var t21=L.polyline([[52.1081,-106.733],[52.7533,-106.1158]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-21').addEventListener('change',function(){t21.setStyle({opacity:this.checked?0.85:0})});
+var t22=L.polyline([[52.7533,-106.1158],[52.683,-106.033],[52.817,-106.283]],{color:'#8B4513',weight:4,opacity:0.85}).addTo(map);
+document.getElementById('trail-22').addEventListener('change',function(){t22.setStyle({opacity:this.checked?0.85:0})});
+var t23=L.polyline([[49.888,-97.142],[51.651,-98.497],[53.967,-97.833],[57.003,-92.305]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-23').addEventListener('change',function(){t23.setStyle({opacity:this.checked?0.85:0})});
+var t24=L.polyline([[53.967,-97.833],[55.476,-107.918],[57.003,-92.305]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-24').addEventListener('change',function(){t24.setStyle({opacity:this.checked?0.85:0})});
+var t25=L.polyline([[49.888,-97.142],[51.651,-98.497],[54.083,-95.583],[57.003,-92.305]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-25').addEventListener('change',function(){t25.setStyle({opacity:this.checked?0.85:0})});
+var t26=L.polyline([[49.888,-97.142],[52.755,-106.116],[53.203,-105.753]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-26').addEventListener('change',function(){t26.setStyle({opacity:this.checked?0.85:0})});
+var t27=L.polyline([[49.888,-97.142],[49.867,-97.617],[49.4667,-99.3167],[49.4589,-100.4167]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-27').addEventListener('change',function(){t27.setStyle({opacity:this.checked?0.85:0})});
+var t28=L.polyline([[49.888,-97.142],[50.433,-97.067],[51.651,-98.497],[53.967,-101.833]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-28').addEventListener('change',function(){t28.setStyle({opacity:this.checked?0.85:0})});
+var t29=L.polyline([[53.967,-97.833],[54.133,-102.233]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-29').addEventListener('change',function(){t29.setStyle({opacity:this.checked?0.85:0})});
+var t30=L.polyline([[49.888,-97.142],[49.433,-95.183],[49.233,-93.883]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-30').addEventListener('change',function(){t30.setStyle({opacity:this.checked?0.85:0})});
+var t31=L.polyline([[49.888,-97.142],[50.733,-97.367],[50.867,-98.283]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-31').addEventListener('change',function(){t31.setStyle({opacity:this.checked?0.85:0})});
+var t32=L.polyline([[51.651,-98.497],[52.083,-99.933],[51.917,-99.667]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-32').addEventListener('change',function(){t32.setStyle({opacity:this.checked?0.85:0})});
+var t33=L.polyline([[54.133,-102.233],[54.883,-103.117]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-33').addEventListener('change',function(){t33.setStyle({opacity:this.checked?0.85:0})});
+var t34=L.polyline([[55.483,-103.283],[56.583,-108.083],[57.483,-110.717]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-34').addEventListener('change',function(){t34.setStyle({opacity:this.checked?0.85:0})});
+var t35=L.polyline([[57.483,-110.717],[58.183,-113.483]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-35').addEventListener('change',function(){t35.setStyle({opacity:this.checked?0.85:0})});
+var t36=L.polyline([[57.483,-110.717],[56.883,-118.283]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-36').addEventListener('change',function(){t36.setStyle({opacity:this.checked?0.85:0})});
+var t37=L.polyline([[54.133,-102.233],[55.483,-103.283],[56.583,-108.083]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-37').addEventListener('change',function(){t37.setStyle({opacity:this.checked?0.85:0})});
+var t38=L.polyline([[52.755,-106.116],[54.133,-102.233],[56.533,-109.833]],{color:'#2980B9',weight:3,dashArray:'True',opacity:0.85}).addTo(map);
+document.getElementById('trail-38').addEventListener('change',function(){t38.setStyle({opacity:this.checked?0.85:0})});
+</script>
 </script>
 </body>
 </html>
