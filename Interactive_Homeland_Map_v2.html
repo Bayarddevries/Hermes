@@ -103,6 +103,8 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 }
 .tl-labels{display:flex;justify-content:space-between;padding:0 2px}
 .tl-labels span{font-size:.6rem;color:var(--t3)}
+.tl-reset{background:var(--bg3);border:1px solid var(--brd2);border-radius:var(--r1);padding:var(--xs) var(--sm);font-size:.65rem;color:var(--t2);cursor:pointer;font-family:inherit;transition:all .15s}
+.tl-reset:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* ===== POPUPS ===== */
 .leaflet-popup-content-wrapper{
@@ -333,8 +335,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
     <span class="tl-title">Timeline Filter</span>
     <span class="tl-year" id="tl-year">All Eras</span>
     <span class="tl-count" id="tl-count"></span>
+    <button class="tl-reset" id="tl-reset" title="Reset timeline">Reset</button>
   </div>
-  <input type="range" class="tl-slider" id="tl-slider" min="0" max="12" value="0" step="1"/>
+  <input type="range" class="tl-slider" id="tl-slider" min="0" max="12" value="12" step="1"/>'
+
   <div class="tl-labels">
     <span>1680</span><span>1720</span><span>1760</span><span>1800</span><span>1820</span><span>1840</span><span>1860</span><span>1870</span><span>1880</span><span>1890</span><span>1900</span><span>1950</span><span>All</span>
   </div>
@@ -5788,7 +5792,7 @@ locations.forEach(function(loc) {
         radius: r, fillColor: color, color: '#fff', weight: 1,
         opacity: 0.85, fillOpacity: 0.75
     });
-    // Location popups - rich themed cards showing ALL data
+// Location popups - rich themed cards showing ALL data
     var popColor = LC[loc.layer] || '#4CAF50';
     m.bindPopup(
         '<div class="loc-popup">' +
@@ -5813,6 +5817,9 @@ locations.forEach(function(loc) {
     );
     LG[loc.layer].addLayer(m);
     LG[loc.layer].addTo(map);
+    // Store direct refs so timeline filter can always find markers
+    loc._marker = m;
+});
 });
 
 // ===== Trail lines + Build sidebar =====
@@ -5926,15 +5933,14 @@ document.getElementById('search').addEventListener('input', function() {
 });
 
 // ===== TIMELINE FILTER =====
-// Era cutoffs match slider positions 0-12 (13 labels)
+// Era cutoffs match slider positions 0-12
 // 0=1680 (most restrictive) → 11=1950 → 12=All
 var eras = [1680, 1720, 1760, 1800, 1820, 1840, 1860, 1870, 1880, 1890, 1900, 1950, 99999];
-var eraLabels = ['1680','1720','1760','1800','1820','1840','1860','1870','1880','1890','1900','1950','All'];
 
 function parseFirstYear(text) {
     if (!text) return 99999;
     var low = text.toLowerCase();
-    // Ancient, Historic, Oral tradition = very old, always show
+    // Ancient, Historic, Oral tradition, approximate = very old, always show
     if (low.indexOf('ancient') > -1 || low.indexOf('historic') > -1 || low.indexOf('oral') > -1 || low.indexOf('traditional') > -1 || low.indexOf('approximate') > -1) return 1;
     var m = text.match(/(\d{4})/);
     return m ? parseInt(m[1]) : 99999;
@@ -5944,59 +5950,29 @@ function applyTimeline() {
     var idx = parseInt(document.getElementById('tl-slider').value);
     var cutoff = eras[idx];
     
-    // At position 12 (last) - "All" - show everything
+    // Position 12 = "All" — show everything, skip filtering
     if (idx === eras.length - 1) {
-        document.getElementById('tl-year').textContent = 'All Eras';
-        document.getElementById('tl-count').textContent = locations.length + ' locations';
-        document.getElementById('vc').textContent = locations.length;
-        
-        // Show all location markers that might have been hidden
-        locations.forEach(function(loc) {
-            var m = null;
-            LG[loc.layer].eachLayer(function(mkr) {
-                if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.001) {
-                    m = mkr;
-                }
-            });
-            if (m && !LG[loc.layer].hasLayer(m)) {
-                LG[loc.layer].addLayer(m);
-            }
-        });
-        
-        // Rebuild ALL trails
-        cartTG.clearLayers();
-        boatTG.clearLayers();
-        trails.forEach(function(t) {
-            addTrailToGroup(t, t.category === 'Red River Cart Trails' ? cartTG : boatTG);
-        });
-        cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
-        boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
+        resetTimeline();
         return;
     }
     
     document.getElementById('tl-year').textContent = 'Up to ' + cutoff;
     
-    // Filter location markers
+    // Filter location markers — use direct _marker refs (not eachLayer which misses hidden markers)
     var visibleCount = 0;
     locations.forEach(function(loc) {
         var year = parseFirstYear(loc.founded);
-        var m = null;
-        LG[loc.layer].eachLayer(function(mkr) {
-            if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.001) {
-                m = mkr;
-            }
-        });
-        if (m) {
-            if (year <= cutoff) {
-                if (!LG[loc.layer].hasLayer(m)) LG[loc.layer].addLayer(m);
-                visibleCount++;
-            } else {
-                if (LG[loc.layer].hasLayer(m)) LG[loc.layer].removeLayer(m);
-            }
+        var m = loc._marker;
+        if (!m) return;
+        
+        if (year <= cutoff) {
+            if (!LG[loc.layer].hasLayer(m)) { LG[loc.layer].addLayer(m); visibleCount++; }
+        } else {
+            if (LG[loc.layer].hasLayer(m)) LG[loc.layer].removeLayer(m);
         }
     });
     
-    // Filter trails - rebuild both groups
+    // Filter trails — rebuild both groups from scratch
     cartTG.clearLayers();
     boatTG.clearLayers();
     trails.forEach(function(t) {
@@ -6014,31 +5990,29 @@ function applyTimeline() {
     document.getElementById('vc').textContent = visibleCount;
 }
 
-// Helper to add a trail with popup + tooltip
-function addTrailToGroup(t, grp) {
-    var line = L.polyline(t.coords, {
-        color: t.color, weight: t.weight,
-        dashArray: t.dash, opacity: 0.82,
-        lineCap: 'round', lineJoin: 'round'
+function resetTimeline() {
+    // Reset slider to All
+    document.getElementById('tl-slider').value = eras.length - 1;
+    document.getElementById('tl-year').textContent = 'All Eras';
+    document.getElementById('tl-count').textContent = locations.length + ' locations';
+    document.getElementById('vc').textContent = locations.length;
+    
+    // Show all location markers using direct refs
+    locations.forEach(function(loc) {
+        if (loc._marker && !LG[loc.layer].hasLayer(loc._marker)) {
+            LG[loc.layer].addLayer(loc._marker);
+        }
     });
-    line.bindPopup(
-        '<div class="loc-popup">' +
-        '<div class="pop-header">' +
-            '<div class="pop-accent" style="background:' + t.color + '"></div>' +
-            '<div class="pop-title">' +
-                '<h3>' + t.name + '</h3>' +
-                '<span class="pop-type" style="background:' + t.color + '">' + t.category + '</span>' +
-            '</div>' +
-        '</div>' +
-        '<div class="pop-desc">' + t.desc + '</div>' +
-        '</div>'
-    );
-    line.bindTooltip(t.name, {
-        sticky: true, direction: 'top',
-        className: 'trail-tooltip',
-        offset: [0, -4]
+    
+    // Rebuild all trails
+    cartTG.clearLayers();
+    boatTG.clearLayers();
+    trails.forEach(function(t) {
+        addTrailToGroup(t, t.category === 'Red River Cart Trails' ? cartTG : boatTG);
     });
-    grp.addLayer(line);
+    
+    cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
+    boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
 }
 
 document.getElementById('tl-slider').addEventListener('input', function() {
@@ -6046,6 +6020,11 @@ document.getElementById('tl-slider').addEventListener('input', function() {
     // Update sidebar trail counts
     cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
     boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
+});
+
+document.getElementById('tl-reset').addEventListener('click', function() {
+    resetTimeline();
+    map.setView([52.0, -99.0], 5);
 });
 
 // Legend offset for timeline bar
