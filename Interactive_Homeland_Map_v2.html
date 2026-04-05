@@ -301,6 +301,10 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader-text{font-size:.8rem;color:var(--t2)}
+.trail-tog{position:fixed;z-index:1001;display:flex;flex-direction:column;gap:6px;bottom:20px;left:16px}
+.trail-btn{width:40px;height:40px;border-radius:8px;background:#232019;border:1px solid rgba(200,149,108,0.25);color:#f0e6d8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;box-shadow:0 4px 16px rgba(0,0,0,0.4);transition:all .2s}
+.trail-btn:hover{background:#c8956c;border-color:#c8956c}
+.trail-btn.on{background:#c8956c;border-color:#c8956c;color:#fff}
 </style>
 </head>
 <body>
@@ -6067,6 +6071,28 @@ sbTog.addEventListener('click', function() {
     sidebar.classList.remove('closed');
     sbTog.classList.add('open');
 });
+// Cart trails toggle
+function toggleCartTrails(btn) {
+    if (map.hasLayer(cartTG)) {
+        map.removeLayer(cartTG);
+        btn.classList.remove('on');
+    } else {
+        cartTG.addTo(map);
+        btn.classList.add('on');
+    }
+}
+
+// York Boat routes toggle  
+function toggleBoatRoutes(btn) {
+    if (map.hasLayer(boatTG)) {
+        map.removeLayer(boatTG);
+        btn.classList.remove('on');
+    } else {
+        boatTG.addTo(map);
+        btn.classList.add('on');
+    }
+}
+
 </script>
 </body>
 </html>
