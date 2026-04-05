@@ -5937,26 +5937,52 @@ function parseFirstYear(text) {
 
 function applyTimeline() {
     var idx = parseInt(document.getElementById('tl-slider').value);
-    var cutoff = eras[idx];
     
-    // Show "All Eras" when at max
-    document.getElementById('tl-year').textContent = idx === 0 ? 'All Eras' : 
-                                                    idx >= eras.length - 1 ? 'All Eras' :
-                                                    idx < eras.length - 1 ? 'Up to ' + cutoff : 'All Eras';
+    // At position 0 - "All Eras" - show everything, don't filter
+    if (idx === 0) {
+        document.getElementById('tl-year').textContent = 'All Eras';
+        document.getElementById('tl-count').textContent = locations.length + ' locations';
+        document.getElementById('vc').textContent = locations.length;
+        
+        // Show all location markers that might have been hidden
+        locations.forEach(function(loc) {
+            var m = null;
+            LG[loc.layer].eachLayer(function(mkr) {
+                if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.001) {
+                    m = mkr;
+                }
+            });
+            if (m && !LG[loc.layer].hasLayer(m)) {
+                LG[loc.layer].addLayer(m);
+            }
+        });
+        
+        // Rebuild ALL trails
+        cartTG.clearLayers();
+        boatTG.clearLayers();
+        trails.forEach(function(t) {
+            addTrailToGroup(t, t.category === 'Red River Cart Trails' ? cartTG : boatTG);
+        });
+        cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
+        boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
+        return;
+    }
+    
+    var cutoff = eras[idx];
+    document.getElementById('tl-year').textContent = 'Up to ' + cutoff;
     
     // Filter location markers
     var visibleCount = 0;
     locations.forEach(function(loc) {
         var year = parseFirstYear(loc.founded);
         var m = null;
-        // Find the marker for this location in its layer group
         LG[loc.layer].eachLayer(function(mkr) {
-            if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.0001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.0001) {
+            if (!m && mkr.getLatLng && Math.abs(mkr.getLatLng().lat - loc.lat) < 0.001 && Math.abs(mkr.getLatLng().lng - loc.lng) < 0.001) {
                 m = mkr;
             }
         });
         if (m) {
-            if (idx === 0 || year <= cutoff) {
+            if (year <= cutoff) {
                 if (!LG[loc.layer].hasLayer(m)) LG[loc.layer].addLayer(m);
                 visibleCount++;
             } else {
@@ -5965,63 +5991,49 @@ function applyTimeline() {
         }
     });
     
-    // Filter trails
-    var yearLabel = idx === 0 ? 'All Eras' : 'Up to ' + cutoff;
-    var trailCount = 0;
-    trails.forEach(function(t, ti) {
-        var startYear = parseFirstYear(t.year);
-        var line = (t.category === 'Red River Cart Trails' ? cartTG : boatTG).getLayers()[ti] ||
-                   (t.category === 'Red River Cart Trails' ? 
-                    cartTG.getLayers().find(function(l) { return l.options && l._popup && l._popup.getContent() && l._popup.getContent().indexOf(t.name) > -1; }) :
-                    boatTG.getLayers().find(function(l) { return l._popup && l._popup.getContent().indexOf(t.name) > -1; }));
-    });
-    
-    // Simpler trail filtering - rebuild trail groups
+    // Filter trails - rebuild both groups
     cartTG.clearLayers();
     boatTG.clearLayers();
-    var cartNum = 0, boatNum = 0;
     trails.forEach(function(t) {
         var startYear = parseFirstYear(t.year);
-        if (idx === 0 || startYear <= cutoff) {
+        if (startYear <= cutoff) {
             var grp = t.category === 'Red River Cart Trails' ? cartTG : boatTG;
-            var line = L.polyline(t.coords, {
-                color: t.color, weight: t.weight,
-                dashArray: t.dash, opacity: 0.82,
-                lineCap: 'round', lineJoin: 'round'
-            });
-            line.bindPopup(
-                '<div class="loc-popup">' +
-                '<div class="pop-header">' +
-                    '<div class="pop-accent" style="background:' + t.color + '"></div>' +
-                    '<div class="pop-title">' +
-                        '<h3>' + t.name + '</h3>' +
-                        '<span class="pop-type" style="background:' + t.color + '">' + t.category + '</span>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="pop-desc">' + t.desc + '</div>' +
-                '</div>'
-            );
-            line.bindTooltip(t.name, {
-                sticky: true, direction: 'top',
-                className: 'trail-tooltip',
-                offset: [0, -4]
-            });
-            grp.addLayer(line);
-            if (t.category === 'Red River Cart Trails') cartNum++; else boatNum++;
+            addTrailToGroup(t, grp);
         }
     });
     
-    // Update sidebar counts
-    document.querySelectorAll('.lbtn').forEach(function(btn) {
-        // Rebuild sidebar would need full refresh - for now just update visible count
-    });
-
-    // Adjust legend offset for timeline
-    document.querySelector('.legend').style.bottom = '90px';
+    cartBtn.querySelector('.lcnt').textContent = cartTG.getLayers().length;
+    boatBtn.querySelector('.lcnt').textContent = boatTG.getLayers().length;
     
-    // Update count display
     document.getElementById('tl-count').textContent = visibleCount + ' locations';
     document.getElementById('vc').textContent = visibleCount;
+}
+
+// Helper to add a trail with popup + tooltip
+function addTrailToGroup(t, grp) {
+    var line = L.polyline(t.coords, {
+        color: t.color, weight: t.weight,
+        dashArray: t.dash, opacity: 0.82,
+        lineCap: 'round', lineJoin: 'round'
+    });
+    line.bindPopup(
+        '<div class="loc-popup">' +
+        '<div class="pop-header">' +
+            '<div class="pop-accent" style="background:' + t.color + '"></div>' +
+            '<div class="pop-title">' +
+                '<h3>' + t.name + '</h3>' +
+                '<span class="pop-type" style="background:' + t.color + '">' + t.category + '</span>' +
+            '</div>' +
+        '</div>' +
+        '<div class="pop-desc">' + t.desc + '</div>' +
+        '</div>'
+    );
+    line.bindTooltip(t.name, {
+        sticky: true, direction: 'top',
+        className: 'trail-tooltip',
+        offset: [0, -4]
+    });
+    grp.addLayer(line);
 }
 
 document.getElementById('tl-slider').addEventListener('input', function() {
