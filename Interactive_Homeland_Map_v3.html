@@ -6457,8 +6457,9 @@ const cartTG = L.layerGroup().addTo(map);
 const boatTG = L.layerGroup().addTo(map);
 const jctTG = L.layerGroup().addTo(map);
 var cartCount = 0, boatCount = 0;
-trails.forEach(function(t) {
-    var grp = t.category === 'Red River Cart Trails' ? cartTG : boatTG;
+
+// Function to create a trail polyline and add it to a layer group
+function addTrailToGroup(t, grp) {
     var line = L.polyline(t.coords, {
         color: t.color, weight: t.weight,
         dashArray: t.dash, opacity: 0.82,
@@ -6480,13 +6481,17 @@ trails.forEach(function(t) {
         '</div>',
         { maxWidth: 340 }
     );
-    // Hover tooltip
     line.bindTooltip(t.name, {
         sticky: true, direction: 'top',
         className: 'trail-tooltip',
         offset: [0, -4]
     });
     grp.addLayer(line);
+}
+
+trails.forEach(function(t) {
+    var grp = t.category === 'Red River Cart Trails' ? cartTG : boatTG;
+    addTrailToGroup(t, grp);
     if (t.category === 'Red River Cart Trails') cartCount++; else boatCount++;
 });
 
@@ -6547,7 +6552,7 @@ var cartBtn = document.createElement('div');
 cartBtn.className = 'lbtn on';
 cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span><span style="margin-top:2px">Red River Cart Trails</span><span class="lcnt">' + cartCount + '</span>';
 cartBtn.addEventListener('click', function() {
-    var hasTrails = map.hasLayer(cartTG) && Object.keys(cartTG._layers || {}).length > 0;
+    var hasTrails = map.hasLayer(cartTG) && cartTG.getLayers().length > 0;
     if (hasTrails) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
     else {
         cartTG.clearLayers();
@@ -6566,7 +6571,7 @@ var boatBtn = document.createElement('div');
 boatBtn.className = 'lbtn on';
 boatBtn.innerHTML = '<span class="ldot on" style="background:#4da8da"></span>York Boat Routes<span class="lcnt">' + boatCount + '</span>';
 boatBtn.addEventListener('click', function() {
-    var hasTrails = map.hasLayer(boatTG) && Object.keys(boatTG._layers || {}).length > 0;
+    var hasTrails = map.hasLayer(boatTG) && boatTG.getLayers().length > 0;
     if (hasTrails) { map.removeLayer(boatTG); boatBtn.classList.remove('on'); }
     else {
         boatTG.clearLayers();
