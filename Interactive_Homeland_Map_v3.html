@@ -6460,34 +6460,35 @@ var cartCount = 0, boatCount = 0;
 
 // Function to create a trail polyline and add it to a layer group
 function addTrailToGroup(t, grp) {
-    if (!t.coords || t.coords.length < 2) { console.log('TRAIL SKIP: ' + t.name); return; }
+    if (!t.coords || t.coords.length < 2) { console.log('TRAIL SKIP no coords: ' + (t.name || 'unknown')); return; }
     var line = L.polyline(t.coords, {
-        color: t.color, weight: t.weight,
-        dashArray: t.dash, opacity: 0.82,
+        color: t.color || '#c8956c', weight: t.weight || 3,
+        dashArray: t.dash || '', opacity: 0.82,
         lineCap: 'round', lineJoin: 'round'
     });
     line.bindPopup(
         '<div style="background:#232019;">' +
-            '<div style="height:4px;width:100%;background:' + t.color + '"></div>' +
+            '<div style="height:4px;width:100%;background:' + (t.color || '#c8956c') + '"></div>' +
             '<div style="padding:10px 12px 6px;">' +
-                '<div style="font-size:13px;font-weight:700;color:#f0e6d8;line-height:1.3;margin-bottom:4px;">' + t.name + '</div>' +
+                '<div style="font-size:13px;font-weight:700;color:#f0e6d8;line-height:1.3;margin-bottom:4px;">' + (t.name || '') + '</div>' +
                 '<div style="display:flex;gap:4px;flex-wrap:wrap;">' +
-                    '<span style="background:' + t.color + ';color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;">' + t.category + '</span>' +
-                    '<span style="background:rgba(255,255,255,.1);color:#a89b8c;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600;">' + t.year + '</span>' +
+                    '<span style="background:' + (t.color || '#c8956c') + ';color:#fff;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600;">' + (t.category || '') + '</span>' +
+                    '<span style="background:rgba(255,255,255,.1);color:#a89b8c;padding:2px 6px;border-radius:3px;font-size:9px;">' + (t.year || '') + '</span>' +
                 '</div>' +
             '</div>' +
             '<div style="padding:4px 12px 10px;border-top:1px solid rgba(200,149,108,0.15);">' +
-                '<div style="color:#a89b8c;font-size:11px;line-height:1.55;max-height:180px;overflow-y:auto;">' + t.desc + '</div>' +
+                '<div style="color:#a89b8c;font-size:11px;line-height:1.55;max-height:180px;overflow-y:auto;">' + (t.desc || '') + '</div>' +
             '</div>' +
         '</div>',
         { maxWidth: 340 }
     );
-    line.bindTooltip(t.name, {
+    line.bindTooltip(t.name || '', {
         sticky: true, direction: 'top',
         className: 'trail-tooltip',
         offset: [0, -4]
     });
     grp.addLayer(line);
+    console.log('Added trail: ' + (t.name || 'unknown') + ' to layer group');
 }
 
 trails.forEach(function(t) {
@@ -6553,13 +6554,25 @@ var cartBtn = document.createElement('div');
 cartBtn.className = 'lbtn on';
 cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span><span style="margin-top:2px">Red River Cart Trails</span><span class="lcnt">' + cartCount + '</span>';
 cartBtn.addEventListener('click', function() {
-    var hasTrails = map.hasLayer(cartTG) && cartTG.getLayers().length > 0;
-    if (hasTrails) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
-    else {
+    var isOnMap = map.hasLayer(cartTG);
+    var layerCount = cartTG.getLayers().length;
+    console.log('Cart toggle clicked: onMap=' + isOnMap + ' layers=' + layerCount);
+    
+    if (isOnMap && layerCount > 0) { 
+        map.removeLayer(cartTG); 
+        cartBtn.classList.remove('on'); 
+        console.log('Cart toggle: turning OFF');
+    } else {
         cartTG.clearLayers();
+        var rebuilt = 0;
         trails.forEach(function(t) {
-            if (t.category === 'Red River Cart Trails') addTrailToGroup(t, cartTG);
+            if (t.category === 'Red River Cart Trails') {
+                console.log('Rebuilding trail: ' + t.name + ', coords: ' + (t.coords ? t.coords.length : 'NONE'));
+                addTrailToGroup(t, cartTG);
+                rebuilt++;
+            }
         });
+        console.log('Cart toggle: rebuilt ' + rebuilt + ' trails, total layers now: ' + cartTG.getLayers().length);
         map.addLayer(cartTG);
         cartBtn.classList.add('on');
     }
