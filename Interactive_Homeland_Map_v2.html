@@ -5,7 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red River Metis Homeland - Interactive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+
+// ===== SOURCES MODAL =====
+function showSources(btn, locName) {
+    var sources = LOCATION_SOURCES[locName];
+    if (!sources || !sources.length) return;
+    
+    var indicator = document.getElementById('src-indicator');
+    if (indicator) {
+        indicator.textContent = sources.length + ' source' + (sources.length > 1 ? 's' : '');
+        indicator.className = 'src-badge high';
+        indicator.style.display = 'inline-block';
+    }
+    
+    var html = '<div id="src-modal" class="src-modal show" onclick="if(event.target===this)closeSources()">';
+    html += '<div class="src-modal-content">';
+    html += '<div class="src-modal-header"><h3>Sources: ' + locName + '</h3>';
+    html += '<button onclick="closeSources()">&times;</button></div>';
+    html += '<div class="src-modal-body">';
+    
+    sources.forEach(function(src, i) {
+        html += '<div class="src-item">';
+        if (src.entry) {
+            html += '<div class="src-doc">' + (i+1) + '. ' + src.author + '</div>';
+            html += '<div class="src-detail">"' + src.title + '"</div>';
+            html += '<div class="src-detail">' + src.publisher + '</div>';
+            html += '<div class="src-detail">Entry: "' + src.entry + '", Page ' + src.page + '</div>';
+        }
+        if (src.confidence) {
+            var confBadge = '';
+            if (src.confidence >= 0.7) confBadge = '<span class="src-badge high">Strong match</span>';
+            else if (src.confidence >= 0.5) confBadge = '<span class="src-badge medium">Partial match</span>';
+            else confBadge = '<span class="src-badge low">Weak match</span>';
+            html += '<div class="src-match">Confidence: ' + src.confidence + ' ' + confBadge + '</div>';
+        }
+        html += '</div>';
+    });
+    
+    html += '</div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeSources() {
+    var modal = document.getElementById('src-modal');
+    if (modal) modal.remove();
+}
+
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:#1a1714;color:#f0e6d8}
@@ -221,6 +268,25 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
 
 .jct-mark{background:#FFD700;color:#222;width:10px;height:10px;border-radius:50%;border:2px solid #B8860B;box-shadow:0 0 6px rgba(255,215,0,.5)}.jct-mark.leaflet-interactive{cursor:pointer}.jct-tip{font-size:13px;color:#333;max-width:280px}.jct-tip h4{margin:0 0 4px;color:#B8860B;font-size:13px}.jct-tip p{margin:0 0 6px;color:#555;font-size:11px;line-height:1.4}.jct-tip .jct-sources{margin-top:4px;font-size:10px;color:#888}.jct-tip .jct-lbl{display:inline-block;background:#FFD700;color:#222;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-top:3px}
+
+
+/* ===== Sources Modal ===== */
+.src-modal{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center}
+.src-modal.show{display:flex}
+.src-modal-content{background:#232019;border:1px solid var(--brd);border-radius:var(--r3);max-width:500px;width:90%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+.src-modal-header{padding:var(--md);border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.src-modal-header h3{margin:0;font-size:1rem;color:var(--t1)}
+.src-modal-header button{background:none;border:none;color:var(--t3);font-size:1.4rem;cursor:pointer;padding:0 4px}
+.src-modal-body{overflow-y:auto;padding:var(--md)}
+.src-item{padding:var(--sm) 0;border-bottom:1px solid var(--brd);font-size:.85rem;color:var(--t2)}
+.src-item:last-child{border-bottom:none}
+.src-item .src-doc{font-weight:600;color:var(--t1);font-size:.9rem;margin-bottom:4px}
+.src-item .src-detail{margin:2px 0;line-height:1.4}
+.src-item .src-match{margin-top:6px;font-size:.75rem;color:var(--t3)}
+.src-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.65rem;font-weight:600;margin-left:6px;vertical-align:middle}
+.src-badge.high{background:#2d7a3a;color:#fff}
+.src-badge.medium{background:#b8860b;color:#fff}
+.src-badge.low{background:#c0392b;color:#fff}
 
 </style>
 </head>
@@ -6287,7 +6353,12 @@ locations.forEach(function(loc) {
         '</div>',
         // Description
         '<div style="padding:6px 14px 10px;background:#232019;border-top:1px solid rgba(200,149,108,0.15);">',
-        '  <div style="color:#a89b8c;font-size:11.5px;line-height:1.55;max-height:220px;overflow-y:auto;">' + loc.desc + '</div>',
+        '  <div style="color:#a89b8c;font-size:11.5px;line-height:1.55;max-height:180px;overflow-y:auto;">' + loc.desc + '</div>',
+        '  <div style="margin-top:8px">',
+        '    <button onclick="showSources(\'' + loc.name.replace(/'/g, "\\'") + '\')" ',
+        '      style="background:none;border:1px solid rgba(200,149,108,0.4);border-radius:4px;color:#c8956c;font-size:10px;cursor:pointer;padding:3px 10px;letter-spacing:.03em">',
+        '      Sources</button>',
+        '  </div>',
         '</div>',
         '</div>'
     ].join('');
@@ -6774,6 +6845,251 @@ if (openBtn) openBtn.classList.add('open');
 // Cart trails toggle
 
 
+
+
+
+const LOCATION_SOURCES = {
+  "Ash House (Fort de la Frèniere)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Ash House, (Fort de la Frèniere), Manitoba", "page": 9, "confidence": 1.0}],
+  "Bacon Ridge": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Bacon Ridge (Reedy Creek, Ebb and Flow),  Manitoba", "page": 9, "confidence": 0.29}],
+  "Baie de Canard": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Duck Bay, Baie de Canard, Zhiishiibi-Ziibiing, Manitoba", "page": 28, "confidence": 0.5}],
+  "Baie St. Paul": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Baie St. Paul, Saulteaux Village, Manitoba", "page": 9, "confidence": 0.6}],
+  "Baie St. Paul (Saulteaux Village)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Baie St. Paul, Saulteaux Village, Manitoba", "page": 9, "confidence": 1.0}],
+  "Balsam Bay": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Balsam Bay, Manitoba", "page": 11, "confidence": 1.0}],
+  "Barrows (Baden, Powell, National Mills and Red Deer Lake)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Barrows (Baden, Powell, National Mills and Red Deer Lake), Manitoba", "page": 11, "confidence": 1.0}],
+  "Bas de la Rivière (Fort Alexander)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Bas de la Rivière, Pine Falls, Fort Alexander, Manitoba", "page": 12, "confidence": 0.75}],
+  "Bas de la Rivière (Pine Falls, Fort Alexander)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Bas de la Rivière, Pine Falls, Fort Alexander, Manitoba", "page": 12, "confidence": 1.0}],
+  "Battle River Valley": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Berens River, Manitoba", "page": 12, "confidence": 0.25}],
+  "Berens River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Berens River, Manitoba", "page": 12, "confidence": 1.0}],
+  "Big Eddy (Settlement)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Big Eddy Settlement, Manitoba", "page": 13, "confidence": 1.0}],
+  "Birds Hill": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Birds Hill, Manitoba", "page": 13, "confidence": 1.0}],
+  "Blood River Post (Bloodvein River)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Blood River Post (1794 - 1795), Bloodvein River", "page": 15, "confidence": 0.67}],
+  "Blueberry Patch": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Blueberry Patch, Manitoba", "page": 15, "confidence": 1.0}],
+  "Boggy Creek and San Clara": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Boggy Creek and San Clara, Manitoba", "page": 15, "confidence": 1.0}],
+  "Brandon House and Fort Assiniboine": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Brandon House, and Fort Assiniboine Manitoba", "page": 16, "confidence": 1.0}],
+  "Buffalo Lake": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Manitoba", "page": 3, "confidence": 0.33}],
+  "Butte St. Paul (\"Ot Accowabiwinins\")": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Baie St. Paul, Saulteaux Village, Manitoba", "page": 9, "confidence": 0.25}],
+  "Camperville": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Camperville, Manitoba", "page": 23, "confidence": 1.0}],
+  "Carrot River Valley (Pasquia Settlement)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Young Point Settlement, Carrot River Valley (Pasquia Settlement), Manitoba", "page": 117, "confidence": 0.71}],
+  "Catfish Creek": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Catfish Creek, Manitoba", "page": 24, "confidence": 1.0}],
+  "Cayer": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Cayer, Manitoba", "page": 24, "confidence": 1.0}],
+  "Cedar Lake (Chemanwawin) Métis Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Cedar Lake (Chemanwawin) Manitoba Métis Settlement", "page": 25, "confidence": 1.0}],
+  "Charleswood (St. Charles Parish)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort St. Charles", "page": 48, "confidence": 0.4}],
+  "Cold Lake": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Manitoba", "page": 3, "confidence": 1.0}],
+  "Cold Lake (Kississing)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Kississing, Manitoba", "page": 25, "confidence": 1.0}],
+  "Cooks Creek": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Cooks Creek, Manitoba", "page": 25, "confidence": 1.0}],
+  "Cormorant": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Cormorant, Manitoba", "page": 26, "confidence": 1.0}],
+  "Cranberry Portage": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Meadow Portage, Manitoba", "page": 64, "confidence": 0.33}],
+  "Crane River (O-Chi-Chak-Ko-Sipi)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Crane River, O-Chi-Chak-Ko-Sipi , Manitoba", "page": 26, "confidence": 1.0}],
+  "Crescentwood": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Crescentwood, Manitoba", "page": 26, "confidence": 1.0}],
+  "Cumberland House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Manitoba House, Kinosota, Manitoba", "page": 62, "confidence": 0.33}],
+  "Curling River Post": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Curling River Post, Manitoba", "page": 27, "confidence": 1.0}],
+  "Deer Rapids": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Red Deer Lake, Manitoba", "page": 75, "confidence": 0.25}],
+  "Dog Head Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Dog Head Settlement, Manitoba", "page": 28, "confidence": 1.0}],
+  "Dog Patch": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Dog Patch, Winnipeg, Manitoba", "page": 28, "confidence": 0.67}],
+  "Duck Bay (Zhiishiibi-Ziibiing)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Duck Bay, Baie de Canard, Zhiishiibi-Ziibiing, Manitoba", "page": 28, "confidence": 0.5}],
+  "Duck Mountain": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Stony Mountain, Manitoba", "page": 106, "confidence": 0.33}],
+  "Easterville": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Easterville, Manitoba", "page": 3, "confidence": 1.0}],
+  "Eddystone": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Eddystone, Manitoba", "page": 36, "confidence": 1.0}],
+  "Edmonton House (Fort Augustus)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Brandon House, and Fort Assiniboine Manitoba", "page": 16, "confidence": 0.29}],
+  "Fairford Settlement (formerly Pinaymootang)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fairford Settlement, formerly “Pinaymootang” ('Partridge Crop), Manitoba", "page": 36, "confidence": 0.67}],
+  "Fish Creek": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Catfish Creek, Manitoba", "page": 24, "confidence": 0.33}],
+  "Flee Island Entrenchments": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Métis Island, Manitoba", "page": 64, "confidence": 0.25}],
+  "Fond du Lac (now St. Laurent)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fond du lac, now St. Laurent, Manitoba", "page": 36, "confidence": 1.0}],
+  "Fort Alexander (Sagkeeng)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 0.25}],
+  "Fort Dauphin": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 1.0}],
+  "Fort de la Rivière Tremblante": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Bas de la Rivière, Pine Falls, Fort Alexander, Manitoba", "page": 12, "confidence": 0.44}],
+  "Fort de la Rivière Tremblante (Grant’s House, Aspin House)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Ash House, (Fort de la Frèniere), Manitoba", "page": 9, "confidence": 0.4}],
+  "Fort des Épinettes": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort des Épinettes, Manitoba", "page": 39, "confidence": 1.0}],
+  "Fort Desjarlais": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Desjarlais", "page": 39, "confidence": 1.0}],
+  "Fort Ellice": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Ellice, Manitoba", "page": 41, "confidence": 1.0}],
+  "Fort Gibralter": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Gibralter", "page": 42, "confidence": 1.0}],
+  "Fort la Reine": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort la Reine, now Portage la Prairie, Manitoba", "page": 43, "confidence": 0.5}],
+  "Fort la Reine (Portage la Prairie)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort la Reine, now Portage la Prairie, Manitoba", "page": 43, "confidence": 0.83}],
+  "Fort Langley": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 0.33}],
+  "Fort Mr. Grant": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 0.25}],
+  "Fort Pelly": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 0.33}],
+  "Fort Pinancewaywining": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Dauphin", "page": 38, "confidence": 0.33}],
+  "Fort Rouge": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Rouge and Crescentwood, Manitoba", "page": 47, "confidence": 0.5}],
+  "Fort Souris": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort Souris, Manitoba", "page": 49, "confidence": 1.0}],
+  "Fort St. Charles": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort St. Charles", "page": 48, "confidence": 1.0}],
+  "Fouillard Town (The Corner / Li Kwayn)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "The Corner, Li Kwayn, Manitoba", "page": 109, "confidence": 0.67}],
+  "Frog Plain (La Grenouillère)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Frog Plain, La Grenouillère, Manitoba", "page": 49, "confidence": 1.0}],
+  "Grand Rapids (Red River and Saskatchewan River)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Grand Rapids, Red River", "page": 50, "confidence": 0.67}],
+  "Grande Pointe": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Grande Pointe, Manitoba", "page": 52, "confidence": 1.0}],
+  "Grantown (St. François Xavier)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. François Xavier, Manitoba", "page": 103, "confidence": 0.75}],
+  "Grassy Narrows House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Grassy Narrows House, Manitoba", "page": 53, "confidence": 1.0}],
+  "Green Lake (Lac Vert)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rock Lake, Lac des Roches, Manitoba", "page": 80, "confidence": 0.29}],
+  "Hair Hills or Pembina Mountains": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Hair Hills or Pembina Mountains, Manitoba", "page": 54, "confidence": 1.0}],
+  "Îlets de Bois": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière aux Islets de Bois now Carman, Manitoba", "page": 77, "confidence": 0.25}],
+  "Îlets de Bois (now Carman)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière aux Islets de Bois now Carman, Manitoba", "page": 77, "confidence": 0.5}],
+  "Island Cache": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Métis Island, Manitoba", "page": 64, "confidence": 0.33}],
+  "Jack River Post": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Jack River Post, Manitoba", "page": 56, "confidence": 1.0}],
+  "Kelly Lake": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Manitoba", "page": 3, "confidence": 0.33}],
+  "Kettle Stones": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Kettle Stones, Manitoba", "page": 56, "confidence": 1.0}],
+  "Kinosota": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Manitoba House, Kinosota, Manitoba", "page": 62, "confidence": 0.5}],
+  "La Chevulure Montagne Post (Hair Hills Post)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "La Chevulure Montagne Post, Hair Hills Post, Manitoba", "page": 57, "confidence": 1.0}],
+  "Lac des Chênes (Flat Creek)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Oak Lake (Lac des Chênes, also Flat Creek) Métis wintering Sites", "page": 69, "confidence": 0.45}],
+  "Lac Ste. Anne": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Ste. Rose du Lac, Manitoba", "page": 105, "confidence": 0.4}],
+  "Lake Metigoshe Métis Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Lake Metigoshe Métis Settlement, Manitoba", "page": 57, "confidence": 1.0}],
+  "Lake Pepin": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Manitoba", "page": 3, "confidence": 0.33}],
+  "Lane's Post": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Curling River Post, Manitoba", "page": 27, "confidence": 0.25}],
+  "Lane’s Post (St. François Xavier)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. François Xavier, Manitoba", "page": 103, "confidence": 0.6}],
+  "Last Mountain Lake": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Stony Mountain, Manitoba", "page": 106, "confidence": 0.25}],
+  "Lido Plage": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Lido Plage, Manitoba", "page": 58, "confidence": 1.0}],
+  "Little Britain": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Little Britain, Manitoba", "page": 59, "confidence": 1.0}],
+  "Little Chicago (Chicago Line)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Little Britain, Manitoba", "page": 59, "confidence": 0.25}],
+  "Little Grand Rapids House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Little Grand Rapids House, Manitoba", "page": 59, "confidence": 1.0}],
+  "Little Saskatchewan River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Little Saskatchewan River, Manitoba", "page": 59, "confidence": 1.0}],
+  "Longbody Creek (Kenepikiniwewe)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Longbody Creek,  Kenepikiniwewe, Manitoba", "page": 59, "confidence": 1.0}],
+  "Lorette (Petit Point du Chênes)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Petit Point du Chênes now Lorette, Manitoba", "page": 71, "confidence": 0.83}],
+  "Lorette (Petit Point des Chênes)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Petit Point du Chênes now Lorette, Manitoba", "page": 71, "confidence": 0.57}],
+  "Mallard (Enniship)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Mallard (Enniship), Manitoba", "page": 61, "confidence": 1.0}],
+  "Manitoba House (Kinosota)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Manitoba House, Kinosota, Manitoba", "page": 62, "confidence": 1.0}],
+  "Mapleton": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Mapleton, Manitoba", "page": 62, "confidence": 1.0}],
+  "Matheson Island (formerly Snake Island)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Matheson Island, formerly Snake Island, Manitoba", "page": 62, "confidence": 1.0}],
+  "Meadow Portage": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Meadow Portage, Manitoba", "page": 64, "confidence": 1.0}],
+  "Metikewap (Wooden/Bark Tent)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Wooden Tent (Metikewap), Métis Settlement, Manitoba", "page": 116, "confidence": 0.33}],
+  "Métis Island": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Métis Island, Manitoba", "page": 64, "confidence": 1.0}],
+  "Michipicoten Post": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Curling River Post, Manitoba", "page": 27, "confidence": 0.25}],
+  "Milk River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Berens River, Manitoba", "page": 12, "confidence": 0.33}],
+  "Minnedosa": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Tanner’s Crossing, now Minnedosa, Manitoba", "page": 108, "confidence": 0.25}],
+  "Moose Lake (Settlement)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Moose Lake Settlement, Manitoba", "page": 64, "confidence": 1.0}],
+  "Netley Creek (Rivière aux Morts)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Netley Creek, Rivière aux Morts, Manitoba", "page": 65, "confidence": 1.0}],
+  "Norway House and Rossville": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Norway House and Rossville, Manitoba", "page": 66, "confidence": 1.0}],
+  "Oak Lake (Lac des Chênes / Métis Wintering Sites)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Oak Lake (Lac des Chênes, also Flat Creek) Métis wintering Sites", "page": 69, "confidence": 0.73}],
+  "Oak Point House and Oak Point": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Oak Point House and Oak Point, Manitoba", "page": 69, "confidence": 1.0}],
+  "Opaskweyaw (The Pas)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Opaskweyaw now The Pas, Manitoba", "page": 69, "confidence": 0.75}],
+  "Oxford House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Oxford House", "page": 70, "confidence": 1.0}],
+  "Petit Point de Roches": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Petit Point de Roches, Manitoba", "page": 71, "confidence": 1.0}],
+  "Petit Point du Chênes (Lorette)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Petit Point du Chênes now Lorette, Manitoba", "page": 71, "confidence": 0.83}],
+  "Pikwitonei": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pikwitonei, Manitoba", "page": 72, "confidence": 1.0}],
+  "Pine Bluff": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pine Bluff, Manitoba", "page": 72, "confidence": 1.0}],
+  "Pine Dock (Bullhead)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pine Dock, Bullhead Manitoba", "page": 73, "confidence": 1.0}],
+  "Pine Fort": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pine Fort, Manitoba", "page": 73, "confidence": 1.0}],
+  "Pointe à Grouette": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Grande Pointe, Manitoba", "page": 52, "confidence": 0.25}],
+  "Pointe Coupée (St. Adolphe)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pointe Coupée now St. Adolphe, Manitoba", "page": 73, "confidence": 0.8}],
+  "Pointe des Chênes (Grande Pointe des Chênes, Ste. Anne de Chênes)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Anne de Chênes, Manitoba", "page": 101, "confidence": 0.38}],
+  "Pointe du Chien-Maigre": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Grande Pointe, Manitoba", "page": 52, "confidence": 0.25}],
+  "Poitras House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Poitras House, Manitoba", "page": 74, "confidence": 1.0}],
+  "Portage La Loche": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort la Reine, now Portage la Prairie, Manitoba", "page": 43, "confidence": 0.29}],
+  "Rall’s (Rahls) Island (Settlement)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rall’s (Rahls) Island Métis Settlement, Manitoba", "page": 75, "confidence": 0.8}],
+  "Rat Portage": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Meadow Portage, Manitoba", "page": 64, "confidence": 0.33}],
+  "Rat River (Rivière aux Rats)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rat River, Rivière aux Rats, Manitoba", "page": 75, "confidence": 1.0}],
+  "Red Deer Lake": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Red Deer Lake, Manitoba", "page": 75, "confidence": 1.0}],
+  "Red River Settlements (North of Upper Fort Garry)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Red River Settlements North of Upper Fort Garry", "page": 75, "confidence": 1.0}],
+  "Riding Mountain": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Stony Mountain, Manitoba", "page": 106, "confidence": 0.33}],
+  "Rivière aux Islets de Bois (Carman)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière aux Islets de Bois now Carman, Manitoba", "page": 77, "confidence": 0.86}],
+  "Rivière Esturgeon (St. Charles)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière Esturgeon now St. Charles, Manitoba", "page": 80, "confidence": 0.8}],
+  "Rivière Gratchias (Morris)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière Gratchias now Morris, Manitoba", "page": 76, "confidence": 0.75}],
+  "Rivière Sale (St. Norbert)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière Sale now St. Norbert, Manitoba", "page": 77, "confidence": 0.8}],
+  "Rivière St. Pierre": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Pierre, Manitoba", "page": 105, "confidence": 0.67}],
+  "Rock Lake (Lac des Roches)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rock Lake, Lac des Roches, Manitoba", "page": 80, "confidence": 1.0}],
+  "Rooster Town": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rooster Town, Pakan Town, Manitoba", "page": 80, "confidence": 0.67}],
+  "Rooster Town (Pakan Town)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rooster Town, Pakan Town, Manitoba", "page": 80, "confidence": 1.0}],
+  "Salt Point Métis Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Salt Point Métis Settlement, Manitoba", "page": 82, "confidence": 1.0}],
+  "Sandy Bay": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Sandy Bay, Manitoba", "page": 82, "confidence": 1.0}],
+  "Sault à la Biche (Deer Rapids, St. Andrews)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Sault à la Biche, Deer Rapids, now St. Andrews, Manitoba", "page": 97, "confidence": 0.89}],
+  "Saulteaux Village": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Baie St. Paul, Saulteaux Village, Manitoba", "page": 9, "confidence": 0.4}],
+  "Selby Town": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Selby Town, Manitoba", "page": 7, "confidence": 1.0}],
+  "Seven Oaks (Sept Chênes)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Seven Oaks, Sept Chênes, Manitoba", "page": 98, "confidence": 1.0}],
+  "Shoal River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Shoal River House, Manitoba", "page": 98, "confidence": 0.67}],
+  "Shoal River House": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Shoal River House, Manitoba", "page": 98, "confidence": 1.0}],
+  "Skownan, Rock Ridge and Mallard Métis Settlements": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Skownan, Rock Ridge and Mallard Métis Settlements", "page": 98, "confidence": 1.0}],
+  "Smokey River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Berens River, Manitoba", "page": 12, "confidence": 0.33}],
+  "South Indian Lake Métis Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "South Indian Lake Métis Settlement", "page": 98, "confidence": 1.0}],
+  "Spring Creek (Lewistown)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Catfish Creek, Manitoba", "page": 24, "confidence": 0.25}],
+  "St. Adolphe": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Pointe Coupée now St. Adolphe, Manitoba", "page": 73, "confidence": 0.4}],
+  "St. Ambroise": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 0.33}],
+  "St. Andrews": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 0.33}],
+  "St. Anne de Chênes": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Anne de Chênes, Manitoba", "page": 101, "confidence": 1.0}],
+  "St. Boniface": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 1.0}],
+  "St. Charles": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort St. Charles", "page": 48, "confidence": 0.67}],
+  "St. Eustache (formerly Baie St. Paul)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Baie St. Paul, Saulteaux Village, Manitoba", "page": 9, "confidence": 0.43}],
+  "St. François Xavier": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. François Xavier, Manitoba", "page": 103, "confidence": 1.0}],
+  "St. Joseph (Walhalla)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 0.25}],
+  "St. Laurent": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fond du lac, now St. Laurent, Manitoba", "page": 36, "confidence": 0.33}],
+  "St. Mary’s (Portage la Prairie)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Fort la Reine, now Portage la Prairie, Manitoba", "page": 43, "confidence": 0.38}],
+  "St. Norbert": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Rivière Sale now St. Norbert, Manitoba", "page": 77, "confidence": 0.4}],
+  "St. Peter's Mission": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 0.25}],
+  "St. Pierre": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Pierre, Manitoba", "page": 105, "confidence": 1.0}],
+  "St. Vital": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Vital, Manitoba", "page": 106, "confidence": 1.0}],
+  "Ste. Madeleine": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Ste. Madeleine, Manitoba", "page": 104, "confidence": 1.0}],
+  "Ste. Rose du Lac": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Ste. Rose du Lac, Manitoba", "page": 105, "confidence": 1.0}],
+  "Stony Mountain": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Stony Mountain, Manitoba", "page": 106, "confidence": 1.0}],
+  "Stovepipe (Tuyau)": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Stovepipe, Tuyau", "page": 8, "confidence": 1.0}],
+  "Sugar Island (Lake Manitoba)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Sugar Island, Lake Manitoba", "page": 107, "confidence": 1.0}],
+  "Summerberry Marsh": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Summerberry Marsh, Manitoba", "page": 107, "confidence": 1.0}],
+  "Swan Creek": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Swan Creek, Manitoba", "page": 107, "confidence": 1.0}],
+  "Swan River (and Swan River House)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Swan River House", "page": 108, "confidence": 0.75}],
+  "Tanner’s Crossing (Minnedosa)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Tanner’s Crossing, now Minnedosa, Manitoba", "page": 108, "confidence": 0.75}],
+  "Teton River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Berens River, Manitoba", "page": 12, "confidence": 0.33}],
+  "The Corner (Li Kwayn)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "The Corner, Li Kwayn, Manitoba", "page": 109, "confidence": 1.0}],
+  "The Pas": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Opaskweyaw now The Pas, Manitoba", "page": 69, "confidence": 0.5}],
+  "The Passage (Charleswood)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "The Passage, Charleswood Manitoba", "page": 110, "confidence": 1.0}],
+  "Thicket Portage": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Thicket Portage, Manitoba", "page": 110, "confidence": 1.0}],
+  "Thomas Métis Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Thomas Métis Settlement, Manitoba", "page": 111, "confidence": 1.0}],
+  "Tin Town": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Tin Town, Winnipeg, Manitoba", "page": 9, "confidence": 0.67}],
+  "Turtle Mountain": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Turtle Mountain House", "page": 111, "confidence": 0.67}],
+  "Turtle Mountain (and Turtle Mountain House)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Turtle Mountain House", "page": 111, "confidence": 0.75}],
+  "Umphreville or Humphreville (Settlement)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Umphreville or Humphreville Settlement, Manitoba", "page": 111, "confidence": 1.0}],
+  "Upper Athabasca": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Upper Fort Garry", "page": 111, "confidence": 0.25}],
+  "Upper Fort Garry": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Upper Fort Garry", "page": 111, "confidence": 1.0}],
+  "Wabowden": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Wabowden, Manitoba", "page": 113, "confidence": 1.0}],
+  "Waterhen River (Rivière de la Poule d'Eau)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Waterhen River, Rivière de la Poule d'Eau, Manitoba", "page": 113, "confidence": 1.0}],
+  "Wekusko (Herb) Lake": [{"document": "20th Century Metis Displacement and Road Allowance Communities (2019)", "author": "Lawrence Barkwell, Ed.", "entry": "Cold Lake, Manitoba", "page": 3, "confidence": 0.25}],
+  "White Mud River": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "White Mud River Settlement, Rat Creek, and Totogan", "page": 114, "confidence": 0.38}],
+  "White Mud River Settlement (Rat Creek and Totogan)": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "White Mud River Settlement, Rat Creek, and Totogan", "page": 114, "confidence": 1.0}],
+  "Winnipeg-St. Boniface": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "St. Boniface, Manitoba", "page": 102, "confidence": 0.33}],
+  "Winnipegosis": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Winnipegosis, Manitoba", "page": 116, "confidence": 1.0}],
+  "Young Point Settlement": [{"document": "Historic Metis Settlements in Manitoba (2018)", "author": "Lawrence Barkwell, Ed.", "entry": "Young Point Settlement, Carrot River Valley (Pasquia Settlement), Manitoba", "page": 117, "confidence": 0.43}]
+};
+
+
+
+// ===== SOURCES MODAL =====
+function showSources(btn, locName) {
+    var sources = LOCATION_SOURCES[locName];
+    if (!sources || !sources.length) return;
+    
+    var indicator = document.getElementById('src-indicator');
+    if (indicator) {
+        indicator.textContent = sources.length + ' source' + (sources.length > 1 ? 's' : '');
+        indicator.className = 'src-badge high';
+        indicator.style.display = 'inline-block';
+    }
+    
+    var html = '<div id="src-modal" class="src-modal show" onclick="if(event.target===this)closeSources()">';
+    html += '<div class="src-modal-content">';
+    html += '<div class="src-modal-header"><h3>Sources: ' + locName + '</h3>';
+    html += '<button onclick="closeSources()">&times;</button></div>';
+    html += '<div class="src-modal-body">';
+    
+    sources.forEach(function(src, i) {
+        html += '<div class="src-item">';
+        if (src.entry) {
+            html += '<div class="src-doc">' + (i+1) + '. ' + src.author + '</div>';
+            html += '<div class="src-detail">"' + src.title + '"</div>';
+            html += '<div class="src-detail">' + src.publisher + '</div>';
+            html += '<div class="src-detail">Entry: "' + src.entry + '", Page ' + src.page + '</div>';
+        }
+        if (src.confidence) {
+            var confBadge = '';
+            if (src.confidence >= 0.7) confBadge = '<span class="src-badge high">Strong match</span>';
+            else if (src.confidence >= 0.5) confBadge = '<span class="src-badge medium">Partial match</span>';
+            else confBadge = '<span class="src-badge low">Weak match</span>';
+            html += '<div class="src-match">Confidence: ' + src.confidence + ' ' + confBadge + '</div>';
+        }
+        html += '</div>';
+    });
+    
+    html += '</div></div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeSources() {
+    var modal = document.getElementById('src-modal');
+    if (modal) modal.remove();
+}
 
 </script>
 </body>
