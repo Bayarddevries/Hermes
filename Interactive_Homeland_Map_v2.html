@@ -5808,37 +5808,50 @@ locations.forEach(function(loc) {
         fillOpacity: 0, opacity: 0, weight: 0, interactive: true
     }).addTo(map);
     hit.on('click touchend', function(e) { m.openPopup(); });
-// Location popups - rich themed cards showing ALL data
+// Simple popup using Leaflet's native HTML support
     var popColor = LC[loc.layer] || '#4CAF50';
-    m.bindPopup(
-        '<div class="loc-popup">' +
-        '<div class="pop-header">' +
-            '<div class="pop-accent" style="background:' + popColor + '"></div>' +
-            '<div class="pop-title">' +
-                '<h3>' + loc.name + '</h3>' +
-                '<span class="pop-type" style="background:' + popColor + '">' + loc.type + '</span>' +
-            '</div>' +
-        '</div>' +
-        '<div class="pop-meta">' +
-            '<span class="meta-item"><span class="meta-icon">&#x1F4C5;</span> Founded: ' + loc.founded + '</span>' +
-            '<span class="meta-item"><span class="meta-icon">&#x1F4CD;</span> ' + loc.lat.toFixed(4) + ', ' + loc.lng.toFixed(4) + '</span>' +
-        '</div>' +
-        '<div class="pop-details">' +
-            '<div class="detail-row"><span class="detail-label">Region:</span><span class="detail-value">' + loc.region + '</span></div>' +
-            '<div class="detail-row"><span class="detail-label">Category:</span><span class="detail-value">' + loc.layer + '</span></div>' +
-            '<div class="detail-row"><span class="detail-label">Priority:</span><span class="detail-value">' + loc.priority + '</span></div>' +
-        '</div>' +
-        '<div class="pop-desc">' + loc.desc + '</div>' +
+    var popupContent = [
+        '<div style="font-family:Segoe UI,sans-serif;color:#f0e6d8;min-width:250px;max-width:350px;">',
+        '<div style="background:#c8956c;color:#fff;padding:10px 14px;font-size:14px;font-weight:700;border-radius:14px 14px 0 0;">',
+        loc.name,
         '</div>',
-        {maxWidth: 300, closeButton: true, autoPan: true, className: 'loc-popup-wrapper'}
-    );
+        '<div style="padding:8px 14px;background:#232019;border-bottom:1px solid #333;font-size:12px;color:#a89b8c;">',
+        '<b style="color:#c8956c">Type:</b> ' + loc.type + '<br>',
+        '<b style="color:#c8956c">Founded:</b> ' + loc.founded + '<br>',
+        '<b style="color:#c8956c">Region:</b> ' + loc.region + '<br>',
+        '<b style="color:#c8956c">Coords:</b> ' + loc.lat.toFixed(4) + ', ' + loc.lng.toFixed(4),
+        '</div>',
+        '<div style="padding:10px 14px;background:#1a1714;font-size:13px;color:#f0e6d8;line-height:1.5;max-height:200px;overflow-y:auto;border-radius:0 0 14px 14px;">',
+        loc.desc,
+        '</div>',
+        '</div>'
+    ].join('');
+    
+    m.bindPopup(popupContent, {
+        maxWidth: 350,
+        closeButton: true,
+        autoPan: true
+    });
+    
     m.on('click', function() { 
         console.log('Marker clicked:', loc.name);
         m.openPopup(); 
-    }).on('touchend', function(e) { 
-        console.log('Touchend on marker:', loc.name);
-        e.originalEvent.preventDefault();
-        m.openPopup(); 
+    });
+    
+    // Also add invisible wider hit area for mobile
+    var hitArea = L.circleMarker([loc.lat, loc.lng], {
+        radius: 20,
+        fillColor: 'transparent',
+        color: 'transparent',
+        fillOpacity: 0,
+        opacity: 0,
+        weight: 0,
+        interactive: true
+    }).addTo(map);
+    
+    hitArea.on('click', function() {
+        console.log('HitArea clicked for:', loc.name);
+        m.openPopup();
     });
     LG[loc.layer].addLayer(m);
     LG[loc.layer].addTo(map);
