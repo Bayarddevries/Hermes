@@ -6460,6 +6460,7 @@ var cartCount = 0, boatCount = 0;
 
 // Function to create a trail polyline and add it to a layer group
 function addTrailToGroup(t, grp) {
+    if (!t.coords || t.coords.length < 2) { console.log('TRAIL SKIP: ' + t.name); return; }
     var line = L.polyline(t.coords, {
         color: t.color, weight: t.weight,
         dashArray: t.dash, opacity: 0.82,
