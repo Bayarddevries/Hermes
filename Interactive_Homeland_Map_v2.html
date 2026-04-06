@@ -202,9 +202,9 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .tl-labels{position:relative}
 .tl-labels .tl-active{color:var(--accent)!important;font-weight:700}
 
-/* Smooth popup open */
-.leaflet-popup{animation:popIn .2s both}
-@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+/* Smooth popup open - opacity only, no transform (Leaflet uses transform for positioning) */
+.leaflet-popup{animation:fadeIn .2s both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* Map loading overlay */
 .map-loader{
