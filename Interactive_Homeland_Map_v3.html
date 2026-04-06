@@ -6551,12 +6551,8 @@ cartBtn.addEventListener('click', function() {
         trails.forEach(function(t) {
             if (t.category === 'Red River Cart Trails') addTrailToGroup(t, cartTG);
         });
-        if (cartTG._layers && Object.keys(cartTG._layers).length === 0) {
-            cartBtn.classList.remove('on');
-        } else {
-            map.addLayer(cartTG);
-            cartBtn.classList.add('on');
-        }
+        map.addLayer(cartTG);
+        cartBtn.classList.add('on');
     }
     updCount();
 });
@@ -6573,12 +6569,8 @@ boatBtn.addEventListener('click', function() {
         trails.forEach(function(t) {
             if (t.category === 'York Boat Routes') addTrailToGroup(t, boatTG);
         });
-        if (boatTG._layers && Object.keys(boatTG._layers).length === 0) {
-            boatBtn.classList.remove('on');
-        } else {
-            map.addLayer(boatTG);
-            boatBtn.classList.add('on');
-        }
+        map.addLayer(boatTG);
+        boatBtn.classList.add('on');
     }
 });
 
