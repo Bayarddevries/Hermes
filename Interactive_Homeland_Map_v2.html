@@ -220,21 +220,6 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .leaflet-popup{animation:fadeIn .2s both}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-/* Map loading overlay */
-.map-loader{
-  position:fixed;inset:0;z-index:2000;background:var(--bg);
-  display:flex;align-items:center;justify-content:center;
-  flex-direction:column;gap:var(--md);
-  transition:opacity .5s,visibility .5s;
-}
-.map-loader.done{opacity:0;visibility:hidden;pointer-events:none}
-.loader-ring{
-  width:40px;height:40px;border:3px solid var(--brd);
-  border-top-color:var(--accent);border-radius:50%;
-  animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loader-text{font-size:.8rem;color:var(--t2)}
 
 .jct-mark{background:#FFD700;color:#222;width:10px;height:10px;border-radius:50%;border:2px solid #B8860B;box-shadow:0 0 6px rgba(255,215,0,.5)}.jct-mark.leaflet-interactive{cursor:pointer}.jct-tip{font-size:13px;color:#333;max-width:280px}.jct-tip h4{margin:0 0 4px;color:#B8860B;font-size:13px}.jct-tip p{margin:0 0 6px;color:#555;font-size:11px;line-height:1.4}.jct-tip .jct-sources{margin-top:4px;font-size:10px;color:#888}.jct-tip .jct-lbl{display:inline-block;background:#FFD700;color:#222;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;margin-top:3px}
 
@@ -301,10 +286,6 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
 
 <!-- Loading overlay -->
-<div class="map-loader" id="map-loader">
-  <div class="loader-ring"></div>
-  <div class="loader-text">Loading Metis Homeland...</div>
-</div>
 
 <script>
 const locations = [
@@ -7493,6 +7474,9 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     maxZoom:19, subdomains:'abcd'
 }).addTo(map);
 
+// Force tiles to calculate correctly immediately (fixes Android rendering)
+setTimeout(function() { try { map.invalidateSize(); } catch(e) {} }, 200);
+
 // ===== Layer groups =====
 const LG = {};
 Object.keys(LC).forEach(function(l) {
@@ -7962,20 +7946,6 @@ if (catModal) catModal.addEventListener('click', function(e) {
 document.querySelector('.legend').style.bottom = '90px';
 
 // ===== FINAL POLISH =====
-// Hide loading overlay once map is ready
-// Multiple triggers for reliability on mobile Safari/Chrome
-var loaderHidden = false;
-function hideLoader() {
-    if (loaderHidden) return;
-    loaderHidden = true;
-    var loader = document.getElementById('map-loader');
-    if (loader) { loader.classList.add('done'); }
-    try { map.invalidateSize(); } catch(e) {}
-    setTimeout(function() { try { map.invalidateSize(); } catch(e) {} }, 500);
-}
-window.addEventListener('load', function() { hideLoader(); });
-document.addEventListener('DOMContentLoaded', function() { setTimeout(hideLoader, 3000); });
-setTimeout(hideLoader, 6000);
 
 // Highlight active timeline label
 var tlLabels = document.querySelector('.tl-labels');
