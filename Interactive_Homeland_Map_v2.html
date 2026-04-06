@@ -50,8 +50,8 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .sb-tog.open{left:calc(260px + var(--md));opacity:0;pointer-events:none;transform:scale(.95)}
 
 /* Close button in sidebar header */
-.sb-x{background:none;border:none;color:var(--t3);font-size:1.3rem;cursor:pointer;padding:0 4px;line-height:1;transition:color .15s}
-.sb-x:hover{color:var(--accent)}
+.sb-x{background:none;border:none;color:var(--t3);font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1;transition:color .15s;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center}
+.sb-x:hover{color:var(--accent);background:rgba(255,255,255,0.1);border-radius:4px}
 
 /* Layer buttons */
 .lbtn{display:flex;align-items:center;gap:var(--sm);padding:var(--sm) var(--md);cursor:pointer;font-size:.8rem;color:var(--t1);transition:background .15s;user-select:none;border-bottom:1px solid var(--brd)}
@@ -152,8 +152,8 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
   .h-search{flex:1;min-width:0;width:auto}
   
   /* Sidebar: full-width sheet from left */
-  .sidebar{top:60px;left:0;width:calc(100vw - 16px);max-height:65vh;border-radius:0 0 var(--r3) var(--r3);transform:translateX(-100%)}
-  .sidebar.closed{transform:translateX(-100%);opacity:1;pointer-events:auto}
+  .sidebar{top:60px;left:0;width:calc(100vw - 16px);max-height:65vh;border-radius:0 0 var(--r3) var(--r3)}
+  .sidebar.closed{transform:translateX(-100%);opacity:0;pointer-events:none!important}
   .sidebar:not(.closed){transform:translateX(0);opacity:1}
   
   /* Toggle button position */
@@ -201,12 +201,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 
 /* ===== POLISH ===== */
 /* Smooth entry animation */
-.sidebar{animation:slideIn .3s .2s both}
-.sidebar.closed{animation:none;transform:translateX(calc(-100% - var(--md)));opacity:0;pointer-events:auto}
 .legend{animation:fadeUp .4s .3s both}
 .timeline{animation:fadeUp .3s .4s both}
-@keyframes slideIn{from{transform:translateX(calc(-100% - var(--md)));opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Sidebar: starts open, transition handles all show/hide */
 
 /* Polished scrollbar for timeline labels */
 .tl-labels{overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;gap:var(--xs)}
@@ -239,7 +238,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 </header>
 
 <aside class="sidebar">
-  <div class="sb-head">Map Layers <button class="sb-x" id="sb-x" title="Close sidebar">&times;</button></div>
+  <div class="sb-head">Map Layers <button class="sb-x" id="sb-x" title="Close sidebar" onclick="document.querySelector('.sidebar').classList.add('closed');var t=document.getElementById('sb-tog');if(t)t.classList.remove('open')" ontouchend="document.querySelector('.sidebar').classList.add('closed');var t=document.getElementById('sb-tog');if(t)t.classList.remove('open')">&times;</button></div>
   <div class="sb-body" id="layers"></div>
 </aside>
 
@@ -7967,17 +7966,58 @@ if (tlLabels) {
 // ===== SIDEBAR TOGGLE =====
 var sidebar = document.querySelector('.sidebar');
 var sbTog = document.getElementById('sb-tog');
-var sbX = document.getElementById('sb-x');
 
-sbX.addEventListener('click', function() {
+function closeSidebar() {
+    if (!sidebar) return;
     sidebar.classList.add('closed');
-    sbTog.classList.remove('open');
+    var tog = document.getElementById('sb-tog');
+    if (tog) tog.classList.remove('open');
+}
+function openSidebar() {
+    if (!sidebar) return;
+    sidebar.classList.remove('closed');
+    var tog = document.getElementById('sb-tog');
+    if (tog) tog.classList.add('open');
+}
+
+// Find ALL close buttons by ID and data attribute — attach events to each
+var closeTargets = [
+    document.getElementById('sb-x'),
+    document.querySelector('.sb-x'),
+    document.querySelector('[id="sb-x"]')
+];
+closeTargets = closeTargets.filter(Boolean);
+// Deduplicate
+var uniqueTargets = [];
+var seen = new Set();
+closeTargets.forEach(function(t) {
+    var key = t.tagName + (t.id || '') + (t.className || '');
+    if (!seen.has(key)) { seen.add(key); uniqueTargets.push(t); }
 });
 
-sbTog.addEventListener('click', function() {
-    sidebar.classList.remove('closed');
-    sbTog.classList.add('open');
+uniqueTargets.forEach(function(btn) {
+    btn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); closeSidebar(); });
+    btn.addEventListener('touchend', function(e) { e.preventDefault(); e.stopPropagation(); closeSidebar(); });
 });
+
+// Also delegate: any touch/click on the sidebar header text area closes it
+var heads = document.querySelectorAll('.sb-head');
+heads.forEach(function(h) {
+    h.addEventListener('click', function(e) {
+        if (e.target.tagName === 'BUTTON') return; // let button handler do it
+        closeSidebar();
+    });
+});
+
+// Open with ☰ button
+var openBtn = document.getElementById('sb-tog');
+if (openBtn) {
+    openBtn.addEventListener('click', function(e) { e.preventDefault(); openSidebar(); });
+    openBtn.addEventListener('touchend', function(e) { e.preventDefault(); openSidebar(); });
+}
+
+// Start with sidebar open, toggle hidden
+if (openBtn) openBtn.classList.add('open');
 // Cart trails toggle
 
 
