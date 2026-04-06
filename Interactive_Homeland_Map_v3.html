@@ -6546,7 +6546,18 @@ cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></sp
 cartBtn.addEventListener('click', function() {
     var wasVisible = map.hasLayer(cartTG);
     if (wasVisible) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
-    else { map.addLayer(cartTG); cartBtn.classList.add('on'); }
+    else {
+        cartTG.clearLayers();
+        trails.forEach(function(t) {
+            if (t.category === 'Red River Cart Trails') addTrailToGroup(t, cartTG);
+        });
+        if (cartTG._layers && Object.keys(cartTG._layers).length === 0) {
+            cartBtn.classList.remove('on');
+        } else {
+            map.addLayer(cartTG);
+            cartBtn.classList.add('on');
+        }
+    }
     updCount();
 });
 ld.appendChild(cartBtn);
@@ -6557,7 +6568,18 @@ boatBtn.className = 'lbtn on';
 boatBtn.innerHTML = '<span class="ldot on" style="background:#4da8da"></span>York Boat Routes<span class="lcnt">' + boatCount + '</span>';
 boatBtn.addEventListener('click', function() {
     if (map.hasLayer(boatTG)) { map.removeLayer(boatTG); boatBtn.classList.remove('on'); }
-    else { map.addLayer(boatTG); boatBtn.classList.add('on'); }
+    else {
+        boatTG.clearLayers();
+        trails.forEach(function(t) {
+            if (t.category === 'York Boat Routes') addTrailToGroup(t, boatTG);
+        });
+        if (boatTG._layers && Object.keys(boatTG._layers).length === 0) {
+            boatBtn.classList.remove('on');
+        } else {
+            map.addLayer(boatTG);
+            boatBtn.classList.add('on');
+        }
+    }
 });
 
 // Junction Points toggle
@@ -7004,13 +7026,22 @@ const LOCATION_SOURCES = {
 function showSources(btn) {
     var popup = btn.closest('.leaflet-popup-content');
     if (!popup) return;
-    var h2 = popup.querySelector('h2');
-    if (!h2) return;
-    var locName = h2.textContent.trim();
+    // Location name is in first div.font-weight:700 inside the popup, NOT an h2
+    var nameEl = popup.querySelector('[style*="font-weight:700"], h2, h3');
+    if (!nameEl) return;
+    var locName = nameEl.textContent.trim();
+
+    // Try exact match first, then case-insensitive fallback
     var sources = LOCATION_SOURCES[locName];
+    if (!sources || !sources.length) {
+        var lowerName = locName.toLowerCase();
+        for (var key in LOCATION_SOURCES) {
+            if (key.toLowerCase() === lowerName) { sources = LOCATION_SOURCES[key]; break; }
+        }
+    }
     if (!sources || !sources.length) return;
 
-    var esc = function(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var esc = function(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
     var modal = document.getElementById('src-modal');
     if (modal) modal.remove();
 
