@@ -6547,8 +6547,8 @@ var cartBtn = document.createElement('div');
 cartBtn.className = 'lbtn on';
 cartBtn.innerHTML = '<span class="ldot on" style="background:var(--accent)"></span><span style="margin-top:2px">Red River Cart Trails</span><span class="lcnt">' + cartCount + '</span>';
 cartBtn.addEventListener('click', function() {
-    var wasVisible = map.hasLayer(cartTG);
-    if (wasVisible) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
+    var hasTrails = map.hasLayer(cartTG) && Object.keys(cartTG._layers || {}).length > 0;
+    if (hasTrails) { map.removeLayer(cartTG); cartBtn.classList.remove('on'); }
     else {
         cartTG.clearLayers();
         trails.forEach(function(t) {
@@ -6566,7 +6566,8 @@ var boatBtn = document.createElement('div');
 boatBtn.className = 'lbtn on';
 boatBtn.innerHTML = '<span class="ldot on" style="background:#4da8da"></span>York Boat Routes<span class="lcnt">' + boatCount + '</span>';
 boatBtn.addEventListener('click', function() {
-    if (map.hasLayer(boatTG)) { map.removeLayer(boatTG); boatBtn.classList.remove('on'); }
+    var hasTrails = map.hasLayer(boatTG) && Object.keys(boatTG._layers || {}).length > 0;
+    if (hasTrails) { map.removeLayer(boatTG); boatBtn.classList.remove('on'); }
     else {
         boatTG.clearLayers();
         trails.forEach(function(t) {
