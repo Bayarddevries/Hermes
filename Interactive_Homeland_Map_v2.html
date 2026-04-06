@@ -62,6 +62,20 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 .ldot.on{border-color:transparent}
 .lcnt{margin-left:auto;background:var(--bg3);padding:1px 8px;border-radius:10px;font-size:.68rem;color:var(--t3);font-variant-numeric:tabular-nums}
 .ldiv{height:2px;background:var(--brd2);margin:var(--xs) var(--md)}
+.linfo{background:none;border:none;color:var(--t3);cursor:pointer;padding:0 4px;font-size:.85rem;line-height:1;transition:color .15s;flex-shrink:0}
+.linfo:hover{color:var(--accent)}
+
+/* Category info modal */
+.cat-modal{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:var(--lg)}
+.cat-modal.show{display:flex}
+.cat-modal-content{background:#232019;border:1px solid var(--brd2);border-radius:14px;max-width:500px;width:100%;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,.6)}
+.cat-modal-header{padding:var(--md);border-bottom:1px solid var(--brd);display:flex;align-items:center;justify-content:space-between}
+.cat-modal-title{font-size:1rem;font-weight:700;color:var(--t1)}
+.cat-modal-close{background:none;border:none;color:var(--t3);font-size:1.5rem;cursor:pointer;padding:0 4px;line-height:1}
+.cat-modal-close:hover{color:var(--accent)}
+.cat-modal-body{padding:var(--md);overflow-y:auto;color:var(--t2);font-size:.85rem;line-height:1.6}
+.cat-modal-body::-webkit-scrollbar{width:4px}
+.cat-modal-body::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:2px}
 
 /* Legend */
 .legend{position:fixed;bottom:var(--lg);right:var(--lg);z-index:1000;background:var(--bg2);border:1px solid var(--brd);border-radius:var(--r2);padding:var(--md);box-shadow:0 4px 16px rgba(0,0,0,.4);font-size:.75rem}
@@ -241,6 +255,16 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
   <div class="sb-head">Map Layers <button class="sb-x" id="sb-x" title="Close sidebar">&times;</button></div>
   <div class="sb-body" id="layers"></div>
 </aside>
+
+<div class="cat-modal" id="cat-modal">
+  <div class="cat-modal-content">
+    <div class="cat-modal-header">
+      <div class="cat-modal-title" id="cat-modal-title"></div>
+      <button class="cat-modal-close" id="cat-modal-close">&times;</button>
+    </div>
+    <div class="cat-modal-body" id="cat-modal-body"></div>
+  </div>
+</div>
 
 
 
@@ -5696,6 +5720,20 @@ const LC = {
     'Transportation Routes': '#00BCD4',
 };
 
+// Category descriptions for educational context
+const CAT_DESC = {
+    'Forts & Trading Posts': '<p>Forts and trading posts were established by European fur trading companies — primarily the Hudson\'s Bay Company (HBC) and the North West Company (NWC) — across the Métis homeland from the late 1600s through the 1800s.</p><p>These posts were economic hubs that the Métis played a vital role in operating — as interpreters, guides, hunters, freighters, and provision suppliers. The Métis supplied <em>pemmican</em> (dried bison meat and fat) and other provisions to the posts, feeding the fur trade economy.</p><p>Over time, many of these posts became settlements where Métis families lived and built communities.',
+    'Communities & Settlements': '<p>Métis communities and settlements formed organically across the homeland — along rivers, at river lots, and at natural gathering points. These were distinct from European-issued land grants and reflected the Métis\' own system of land occupation.</p><p>Settlements grew around family networks, churches, and the fur trade. Many began as small clusters of Métis farms connected by the <em>river lot</em> system — long, narrow plots of land with frontage along a river, giving each family access to water, fertile land, and transport routes.</p><p>Examples include St. Vital, St. Norbert, Grantown, and Batoche.',
+    'Parishes & Missions': '<p>Parishes and missions were religious institutions — primarily Roman Catholic and Anglican — established across the Métis homeland.</p><p>For the Métis, the Catholic Church in particular was a central community institution. Parish records (baptisms, marriages, burials) are often the best historical record of Métis families and communities. Mission churches served as gathering points, schools, and centres of community life.</p><p>However, the church also played a complicated role in colonial assimilation policies.',
+    'Road Allowance Communities': '<p><strong>"Road allowance"</strong> refers to strips of land — one mile wide — that were set aside for future roads when the Canadian government surveyed the prairies in the late 1800s.</p><p>After the Red River Resistance (1869–70) and the North-West Resistance (1885), many Métis lost their land scrip to speculators or were excluded from the land grant system. Dispossessed Métis families squatted on these unclaimed road allowance strips — the only land available to them — and built communities there.</p><p>These communities became known for their resilience but were also subject to extreme poverty and government neglect. Many were eventually displaced or dispersed.',
+    'Wintering Grounds & Camps': '<p>Wintering grounds and camps were temporary or semi-permanent settlements where Métis families and hunting brigades would camp during the winter months.</p><p>The Métis were semi-nomadic, following the seasonal bison hunt. In summer they would travel across the plains; in winter they would settle in sheltered valleys, river bottoms, or wooded areas where fuel and shelter were available.</p><p>These sites were critical to Métis survival and culture — places of social gathering, storytelling, and community bonding.',
+    'Battles & Resistance': '<p>These sites mark locations of armed conflict and resistance where Métis citizens and allies fought to defend their land, rights, and way of life.</p><p>Key events include the <strong>Red River Resistance (1869–70)</strong>, led by Louis Riel, which established the provisional government and negotiated Manitoba\'s entry into Confederation; the <strong>North-West Resistance (1885)</strong>, including the battles at Fish Creek, Batoche, and Duck Lake; and the <strong>North-West Rebellion</strong> more broadly.</p><p>These events are central to Métis identity and the ongoing struggle for recognition of Métis rights.',
+    'Destroyed Communities': '<p>These were once-vibrant Métis communities that no longer exist — destroyed through land dispossession, government policy, economic displacement, or environmental change.</p><p>Many Métis settlements were abandoned after residents lost their land to speculators, were forced to relocate, or left due to lack of economic opportunity. Some communities were physically destroyed by flooding, railway construction, or urban development.</p><p>Remembering these sites is important for understanding the scope of Métis displacement and the resilience of communities that survived.',
+    'Resource & Harvesting Sites': '<p>These are locations where Métis citizens harvested natural resources — bison hunting grounds, fish camps, trapping areas, berry-picking sites, and areas for gathering medicinal plants.</p><p>The Métis economy was based on seasonal rounds — moving between different resource harvesting sites throughout the year. This deep knowledge of the land and its cycles was passed down through generations.</p><p>These sites represent the Métis relationship with the land as a living, productive landscape that sustained families and communities.',
+    'Governance & Rights': '<p>These sites are associated with Métis governance structures, political organizations, and the struggle for recognition of Métis rights.</p><p>This includes locations of Métis governments (like the provisional government at Red River), political meetings, sites of petitions and negotiations, and places associated with the ongoing struggle for land rights, language rights, and self-determination.</p><p>The Métis have long organized to assert their rights as a distinct Indigenous people with a unique history, language (Michif), and culture.',
+    'Transportation Routes': '<p>These are the historic transportation routes that connected Métis communities across the homeland — overland cart trails, rivers, and lake crossings.</p><p>The most famous is the <strong>Red River Cart trail</strong> network — a system of trails connecting settlements across the prairies. The distinctive Red River Cart, with its large wooden wheels, could carry heavy loads across the plains without roads.</p><p>Other important routes included the <strong>Carlton Trail</strong>, <strong>York boat water routes</strong> on rivers and lakes, and winter roads used for freight and travel.'
+};
+
 
 // ===== Map init =====
 const map = L.map('map', {center:[52.0, -99.0], zoom:5, minZoom:4, maxZoom:13, zoomControl:false, tap:true, tapTolerance:30, clickTolerance:10});
@@ -5792,9 +5830,13 @@ Object.keys(LC).forEach(function(name) {
     var color = LC[name];
     var d = document.createElement('div');
     d.className = 'lbtn on';
-    d.innerHTML = '<span class="ldot on" style="background:' + color + '"></span>' + name + '<span class="lcnt">' + cnt + '</span>';
+    
+    var infoBtn = CAT_DESC[name] ? '<button class="linfo" data-cat="' + name + '" title="Learn about this category">?</button>' : '';
+    
+    d.innerHTML = '<span class="ldot on" style="background:' + color + '"></span>' + name + '<span class="lcnt">' + cnt + '</span>' + infoBtn;
     (function(btn, grp) {
-        d.addEventListener('click', function() {
+        d.addEventListener('click', function(e) {
+            if (e.target.classList.contains('linfo')) return;
             if (map.hasLayer(grp)) {
                 map.removeLayer(grp);
                 btn.classList.remove('on');
@@ -5806,6 +5848,14 @@ Object.keys(LC).forEach(function(name) {
         });
     })(d, LG[name]);
     ld.appendChild(d);
+});
+
+// Info button click handlers
+ld.addEventListener('click', function(e) {
+    if (e.target.classList.contains('linfo')) {
+        var cat = e.target.getAttribute('data-cat');
+        if (CAT_DESC[cat]) showCategoryInfo(cat, LC[cat] || '#c8956c');
+    }
 });
 
 // Trail layer groups
@@ -5852,7 +5902,17 @@ trailDiv.style.textTransform = 'uppercase';
 trailDiv.style.letterSpacing = '.06em';
 trailDiv.style.fontWeight = '600';
 trailDiv.style.padding = 'var(--sm) var(--md)';
-trailDiv.textContent = 'Transport Routes';
+trailDiv.textContent = 'Transport Routes ';
+var trailInfo = document.createElement('button');
+trailInfo.className = 'linfo';
+trailInfo.title = 'Learn about transport routes';
+trailInfo.textContent = '?';
+trailInfo.setAttribute('data-cat', 'Transportation Routes');
+trailInfo.addEventListener('click', function(e) {
+    e.stopPropagation();
+    showCategoryInfo('Transportation Routes', '#00BCD4');
+});
+trailDiv.appendChild(trailInfo);
 ld.appendChild(trailDiv);
 
 var cartBtn = document.createElement('div');
@@ -5999,6 +6059,28 @@ document.getElementById('tl-slider').addEventListener('input', function() {
 document.getElementById('tl-reset').addEventListener('click', function() {
     resetTimeline();
     map.setView([52.0, -99.0], 5);
+});
+
+// ===== Category Info Modal =====
+var catModal = document.getElementById('cat-modal');
+var catModalTitle = document.getElementById('cat-modal-title');
+var catModalBody = document.getElementById('cat-modal-body');
+var catModalClose = document.getElementById('cat-modal-close');
+
+function showCategoryInfo(name, color) {
+    if (!CAT_DESC[name]) return;
+    catModalTitle.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + color + ';margin-right:8px;"></span>' + name;
+    catModalBody.innerHTML = CAT_DESC[name];
+    catModal.classList.add('show');
+}
+
+function closeCategoryInfo() {
+    catModal.classList.remove('show');
+}
+
+if (catModalClose) catModalClose.addEventListener('click', closeCategoryInfo);
+if (catModal) catModal.addEventListener('click', function(e) {
+    if (e.target === catModal) closeCategoryInfo();
 });
 
 // Legend offset for timeline bar
