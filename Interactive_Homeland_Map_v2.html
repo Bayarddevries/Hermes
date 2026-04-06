@@ -355,6 +355,11 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-seri
 </div>
 
 <div id="map"></div>
+<div id="debug-panel" style="position:fixed;top:60px;right:10px;z-index:9999;background:rgba(0,0,0,0.85);color:#0f0;padding:8px;font-size:12px;font-family:monospace;max-width:250px;border:1px solid #333;border-radius:4px;display:none;">
+  <div id="debug-output">Waiting for interaction...</div>
+  <button onclick="this.parentElement.style.display='none'" style="position:absolute;top:2px;right:4px;background:none;border:none;color:#f00;cursor:pointer;font-size:14px;">×</button>
+</div>
+
 
 <!-- Loading overlay -->
 <div class="map-loader" id="map-loader">
@@ -6119,6 +6124,54 @@ sbTog.addEventListener('click', function() {
     sbTog.classList.add('open');
 });
 // Cart trails toggle
+
+
+// Debug: show map interaction info
+(function(){
+    var panel = document.getElementById('debug-panel');
+    var output = document.getElementById('debug-output');
+    
+    // Show panel
+    setTimeout(function() {
+        if(panel) panel.style.display = 'block';
+    }, 2000);
+    
+    function log(msg) {
+        if(output) output.innerHTML += '> ' + msg + '<br>';
+        console.log('DEBUG:', msg);
+    }
+    
+    // Map click detection
+    map.on('click', function(e) {
+        log('Map clicked: ' + e.latlng.lat.toFixed(3) + ',' + e.latlng.lng.toFixed(3));
+    });
+    
+    map.on('mousedown', function() { log('Map mousedown'); });
+    map.on('touchstart', function(e) { log('Touch start: ' + e.containerPoint.x + ',' + e.containerPoint.y); });
+    map.on('touchend', function() { log('Touch end'); });
+    
+    // Check how many markers are on the map
+    var totalMarkers = 0;
+    var totalLayers = 0;
+    map.eachLayer(function(l) {
+        totalLayers++;
+        if(l.getLatLng) totalMarkers++;
+    });
+    log('Map layers: ' + totalLayers);
+    log('CircleMarkers: ' + totalMarkers);
+    log('Zoom: ' + map.getZoom());
+    log('Center: ' + map.getCenter().lat.toFixed(2) + ',' + map.getCenter().lng.toFixed(2));
+    
+    // Add a big red test marker
+    var testMarker = L.circleMarker([52.0, -99.0], {
+        radius: 25, fillColor: 'red', color: 'yellow', weight: 3,
+        fillOpacity: 1, opacity: 1, bubblingMouseEvents: false
+    }).addTo(map);
+    testMarker.bindPopup('TEST POPUP - Tap me!');
+    testMarker.on('click', function() { log('TEST MARKER CLICKED!'); testMarker.openPopup(); });
+    testMarker.on('touchend', function() { log('TEST MARKER TOUCH!'); testMarker.openPopup(); });
+    log('Added test red marker');
+})();
 
 </script>
 </body>
