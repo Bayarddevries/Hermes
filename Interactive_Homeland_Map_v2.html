@@ -5,54 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Red River Metis Homeland - Interactive Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-
-// ===== SOURCES MODAL =====
-function showSources(btn, locName) {
-    var sources = LOCATION_SOURCES[locName];
-    if (!sources || !sources.length) return;
-    
-    var indicator = document.getElementById('src-indicator');
-    if (indicator) {
-        indicator.textContent = sources.length + ' source' + (sources.length > 1 ? 's' : '');
-        indicator.className = 'src-badge high';
-        indicator.style.display = 'inline-block';
-    }
-    
-    var html = '<div id="src-modal" class="src-modal show" onclick="if(event.target===this)closeSources()">';
-    html += '<div class="src-modal-content">';
-    html += '<div class="src-modal-header"><h3>Sources: ' + locName + '</h3>';
-    html += '<button onclick="closeSources()">&times;</button></div>';
-    html += '<div class="src-modal-body">';
-    
-    sources.forEach(function(src, i) {
-        html += '<div class="src-item">';
-        if (src.entry) {
-            html += '<div class="src-doc">' + (i+1) + '. ' + src.author + '</div>';
-            html += '<div class="src-detail">"' + src.title + '"</div>';
-            html += '<div class="src-detail">' + src.publisher + '</div>';
-            html += '<div class="src-detail">Entry: "' + src.entry + '", Page ' + src.page + '</div>';
-        }
-        if (src.confidence) {
-            var confBadge = '';
-            if (src.confidence >= 0.7) confBadge = '<span class="src-badge high">Strong match</span>';
-            else if (src.confidence >= 0.5) confBadge = '<span class="src-badge medium">Partial match</span>';
-            else confBadge = '<span class="src-badge low">Weak match</span>';
-            html += '<div class="src-match">Confidence: ' + src.confidence + ' ' + confBadge + '</div>';
-        }
-        html += '</div>';
-    });
-    
-    html += '</div></div></div>';
-    document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function closeSources() {
-    var modal = document.getElementById('src-modal');
-    if (modal) modal.remove();
-}
-
-</script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;overflow:hidden;font-family:'Segoe UI',system-ui,sans-serif;background:#1a1714;color:#f0e6d8}
@@ -6355,7 +6308,7 @@ locations.forEach(function(loc) {
         '<div style="padding:6px 14px 10px;background:#232019;border-top:1px solid rgba(200,149,108,0.15);">',
         '  <div style="color:#a89b8c;font-size:11.5px;line-height:1.55;max-height:180px;overflow-y:auto;">' + loc.desc + '</div>',
         '  <div style="margin-top:8px">',
-        '    <button onclick="showSources(\'' + loc.name.replace(/'/g, "\\'") + '\')" ',
+        '    <button onclick="showSources(this)" ',
         '      style="background:none;border:1px solid rgba(200,149,108,0.4);border-radius:4px;color:#c8956c;font-size:10px;cursor:pointer;padding:3px 10px;letter-spacing:.03em">',
         '      Sources</button>',
         '  </div>',
@@ -7047,45 +7000,41 @@ const LOCATION_SOURCES = {
 
 
 // ===== SOURCES MODAL =====
-function showSources(btn, locName) {
+function showSources(btn) {
+    var popup = btn.closest('.leaflet-popup-content');
+    if (!popup) return;
+    var h2 = popup.querySelector('h2');
+    if (!h2) return;
+    var locName = h2.textContent.trim();
     var sources = LOCATION_SOURCES[locName];
     if (!sources || !sources.length) return;
-    
-    var indicator = document.getElementById('src-indicator');
-    if (indicator) {
-        indicator.textContent = sources.length + ' source' + (sources.length > 1 ? 's' : '');
-        indicator.className = 'src-badge high';
-        indicator.style.display = 'inline-block';
-    }
-    
+
+    var esc = function(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    var modal = document.getElementById('src-modal');
+    if (modal) modal.remove();
+
     var html = '<div id="src-modal" class="src-modal show" onclick="if(event.target===this)closeSources()">';
     html += '<div class="src-modal-content">';
-    html += '<div class="src-modal-header"><h3>Sources: ' + locName + '</h3>';
+    html += '<div class="src-modal-header"><h3>Sources: ' + esc(locName) + '</h3>';
     html += '<button onclick="closeSources()">&times;</button></div>';
     html += '<div class="src-modal-body">';
-    
+
     sources.forEach(function(src, i) {
         html += '<div class="src-item">';
-        if (src.entry) {
-            html += '<div class="src-doc">' + (i+1) + '. ' + src.author + '</div>';
-            html += '<div class="src-detail">"' + src.title + '"</div>';
-            html += '<div class="src-detail">' + src.publisher + '</div>';
-            html += '<div class="src-detail">Entry: "' + src.entry + '", Page ' + src.page + '</div>';
-        }
+        html += '<div class="src-doc">' + (i+1) + '. ' + (src.author || '') + '</div>';
+        if (src.document) html += '<div class="src-detail">' + esc(src.document) + (src.page ? ', Page ' + src.page : '') + '</div>';
+        if (src.entry) html += '<div class="src-detail">"' + esc(src.entry) + '"</div>';
         if (src.confidence) {
-            var confBadge = '';
-            if (src.confidence >= 0.7) confBadge = '<span class="src-badge high">Strong match</span>';
-            else if (src.confidence >= 0.5) confBadge = '<span class="src-badge medium">Partial match</span>';
-            else confBadge = '<span class="src-badge low">Weak match</span>';
-            html += '<div class="src-match">Confidence: ' + src.confidence + ' ' + confBadge + '</div>';
+            var conf = src.confidence >= 0.7 ? 'Strong' : (src.confidence >= 0.5 ? 'Partial' : 'Weak');
+            var cls = src.confidence >= 0.7 ? 'high' : (src.confidence >= 0.5 ? 'medium' : 'low');
+            html += '<div class="src-match">Confidence: ' + src.confidence + ' <span class="src-badge ' + cls + '">' + conf + '</span></div>';
         }
         html += '</div>';
     });
-    
+
     html += '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
 }
-
 function closeSources() {
     var modal = document.getElementById('src-modal');
     if (modal) modal.remove();
