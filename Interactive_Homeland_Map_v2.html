@@ -5821,6 +5821,7 @@ locations.forEach(function(loc) {
         '<div class="pop-desc">' + loc.desc + '</div>' +
         '</div>'
     );
+    m.on('click', function() { m.openPopup(); });
     LG[loc.layer].addLayer(m);
     LG[loc.layer].addTo(map);
     // Store direct refs so timeline filter can always find markers
